@@ -14,7 +14,6 @@ using Models.TopoModels.EULYNX.rsmTrack;
 using VehiclePassageDetector = Models.TopoModels.EULYNX.rsmSig.VehiclePassageDetector;
 using RsmRouteBody = Models.TopoModels.EULYNX.rsmSig.RouteBody;
 using RouteBody = Models.TopoModels.EULYNX.sig.RouteBody;
-using MainRoute = Models.TopoModels.EULYNX.db.MainRoute;
 
 namespace PlanningToolkit
 {
@@ -26,14 +25,6 @@ namespace PlanningToolkit
         public RsmEntities RsmEntities => DataPrep.hasDataContainer.Single().ownsRsmEntities!;
 
         private HashSet<string> pointElementsAndPositions = new HashSet<string>();
-
-        public record RouteData(Signal entrySignal)
-        {
-            public Signal EntrySignal { get; } = entrySignal;
-            public Signal? ExitSignal { get; set; }
-            public List<Tuple<Turnout, LeftRight>> Points { get; init; } = new List<Tuple<Turnout, LeftRight>>();
-            public List<TvpSection> TvpSections { get; init; } = new List<TvpSection>();
-        }
 
         /// <summary>
         /// The train station with all its assets
@@ -55,7 +46,7 @@ namespace PlanningToolkit
             RsmEntities.usesTrackTopology?.usesPositionedRelation.Where(x => x.id == relationId).Single();
         public TrackAsset? GetTrackAsset(String assetId) =>
             DataPrepEntities.ownsTrackAsset?.Where(x => x.id == assetId).Single();
-        private LinearElementWithLength? GetLinearElementWithLength(String elementId) =>
+        public LinearElementWithLength? GetLinearElementWithLength(String elementId) =>
             RsmEntities.usesTrackTopology?.usesNetElement.OfType<LinearElementWithLength>().Where(l => l.id == elementId).Single();
         private IntrinsicCoordinate? GetCoordinates(String boundsId) =>
             RsmEntities.usesTopography?.usesIntrinsicCoordinate.Where(x => x.id == boundsId).Single();
@@ -63,7 +54,7 @@ namespace PlanningToolkit
             RsmEntities.usesLocation.OfType<SpotLocation>().Where(l => l.id == location).Single();
         private LinearLocation? GetLinearLocation(String location) =>
             RsmEntities.usesLocation.Where(l => l.id == location).Single() as LinearLocation;
-        private RsmSignal? GetRsmSignal(String signalId) =>
+        public RsmSignal? GetRsmSignal(String signalId) =>
             RsmEntities.ownsSignal.Where(s => s.id == signalId).Single();
         private void AddTrackAsset(TrackAsset asset) =>
             DataPrepEntities.ownsTrackAsset?.Add(asset);
@@ -85,13 +76,13 @@ namespace PlanningToolkit
             RsmEntities.ownsPoint.Add(point);
         private void AddRsmRouteBody(RsmRouteBody rsmRouteBody) =>
             RsmEntities.ownsRouteBody?.Add(rsmRouteBody);
-        private void AddRouteBody(RouteBody routeBody) =>
+        public void AddRouteBody(RouteBody routeBody) =>
             DataPrepEntities.ownsRouteBody.Add(routeBody);
-        private void AddRoute<T>(T route) where T : Route =>
+        public void AddRoute<T>(T route) where T : Route =>
             DataPrepEntities.ownsRoute.Add(route);
-        private void AddSectionList(SectionList sectionList) =>
+        public void AddSectionList(SectionList sectionList) =>
             DataPrepEntities.ownsRouteBodyProperty.Add(sectionList);
-        private void AddConflictingRoute(ConflictingRoute conflictingRoute) =>
+        public void AddConflictingRoute(ConflictingRoute conflictingRoute) =>
             DataPrepEntities.ownsConflictingRoute.Add(conflictingRoute);
 
         /// <summary>
@@ -202,7 +193,7 @@ namespace PlanningToolkit
         /// <param name="edge"></param>
         /// <param name="direction"></param>
         /// <returns></returns>
-        IEnumerable<PositionedRelation>? GetPositionedRelationsInDirection(LinearElementWithLength edge, ApplicationDirection direction)
+        public IEnumerable<PositionedRelation>? GetPositionedRelationsInDirection(LinearElementWithLength edge, ApplicationDirection direction)
         {
             return RsmEntities.usesTrackTopology?.usesPositionedRelation
                 .Where(r =>
@@ -408,7 +399,7 @@ namespace PlanningToolkit
         /// <param name="signals"></param>
         /// <param name="direction"></param>
         /// <returns></returns>
-        IEnumerable<Signal> OrderedSignals(List<Signal> signals, ApplicationDirection direction)
+        public IEnumerable<Signal> OrderedSignals(List<Signal> signals, ApplicationDirection direction)
             => direction == ApplicationDirection.normal ?
                 signals.OrderBy(x => GetSignalCoordinate(x)?.value) :
                 signals.OrderByDescending(x => GetSignalCoordinate(x)?.value);
@@ -418,7 +409,7 @@ namespace PlanningToolkit
         /// </summary>
         /// <param name="edge"></param>
         /// <returns></returns>
-        IEnumerable<Signal> GetSignalsForEdge(LinearElementWithLength edge)
+        public IEnumerable<Signal> GetSignalsForEdge(LinearElementWithLength edge)
         {
             var signals = DataPrepEntities.ownsTrackAsset.OfType<Signal>();
             return signals.Where(x => GetEdgeForSignal(x) == edge);
@@ -429,7 +420,7 @@ namespace PlanningToolkit
         /// </summary>
         /// <param name="signal"></param>
         /// <returns></returns>
-        ApplicationDirection? GetSignalDirection(Signal signal)
+        public ApplicationDirection? GetSignalDirection(Signal signal)
         {
             return GetSpotLocation(
                 GetRsmSignal(signal.refersToRsmSignal?.@ref ?? "")?.locations.Single().@ref ?? ""
@@ -441,7 +432,7 @@ namespace PlanningToolkit
         /// </summary>
         /// <param name="signal"></param>
         /// <returns></returns>
-        IntrinsicCoordinate? GetSignalCoordinate(Signal signal) {
+        public IntrinsicCoordinate? GetSignalCoordinate(Signal signal) {
             if (signal.refersToRsmSignal == null)
                 throw new ArgumentException();
 
@@ -468,7 +459,7 @@ namespace PlanningToolkit
         /// <param name="signal"></param>
         /// <param name="direction"></param>
         /// <returns></returns>
-        List<Signal> GetMainSignalsWithDirection(LinearElementWithLength edge, ApplicationDirection direction) =>
+        public List<Signal> GetMainSignalsWithDirection(LinearElementWithLength edge, ApplicationDirection direction) =>
             GetSignalsForEdge(edge).Where(x => GetSignalDirection(x) == direction && IsMainSignal(x)).ToList();
 
         /// <summary>
@@ -476,7 +467,7 @@ namespace PlanningToolkit
         /// </summary>
         /// <param name="signal"></param>
         /// <returns></returns>
-        bool IsMainSignal(Signal signal) =>
+        public bool IsMainSignal(Signal signal) =>
             signal.hasProperty.OfType<SignalType>().Any(p => p.isOfSignalTypeType == SignalTypeTypes.main);
 
         IEnumerable<TvpSection>? GetTvpSectionsForEdgeWithPosition(LinearElementWithLength edge, Func<double?, Boolean> comparePosition, ApplicationDirection? direction)
@@ -528,33 +519,7 @@ namespace PlanningToolkit
                 GetSignalCoordinate(signal)?.value < position : GetSignalCoordinate(signal)?.value > position;
         }
 
-        /// <summary>
-        /// Finds all conflicting routes.
-        /// </summary>
-        /// <param name="routes"></param>
-        /// <returns></returns>
-        public Dictionary<String, List<RouteData>> AddConflictingRoutes(List<RouteData> routes)
-        {
-            var conflictingRoutesMap = new Dictionary<String, List<RouteData>>();
-            for (int i = 0; i < routes.Count(); i++)
-            {
-                // WARNING: We assume that there is only ever one route from entrySignal to exitSignal!
-                var routeId = $"{routes[i].EntrySignal.id}.{routes[i].ExitSignal?.id}";
-                var conflictingRoutes = new List<RouteData>();
-                for (int j = 0; j < routes.Count(); j++)
-                {
-                    // Check if two routes share any tvpSection and add conflict if true
-                    if (i != j && routes[i].TvpSections.Intersect(routes[j].TvpSections).Count() > 0)
-                    {
-                        conflictingRoutes.Add(routes[j]);
-                    }
-                }
-                conflictingRoutesMap.Add(routeId, conflictingRoutes);
-            }
-            return conflictingRoutesMap;
-        }
-
-        private List<TvpSection> GetOverlappingTvpSections(LinearElementWithLength edge, ApplicationDirection direction, Signal? start, Signal? end) {
+        public List<TvpSection> GetOverlappingTvpSections(LinearElementWithLength edge, ApplicationDirection direction, Signal? start, Signal? end) {
             var tvpSections = DataPrepEntities.ownsTrackAsset.OfType<TvpSection>()
                 .Select(x => (
                     Section: x,
@@ -587,54 +552,11 @@ namespace PlanningToolkit
         }
 
         /// <summary>
-        /// Find all routes starting with the given startSignal and add them to container.
-        /// </summary>
-        /// <param name="startSignal"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        private List<RouteData> AddRoutesForStartSignal<T>(Signal startSignal) where T : Route, new()
-        {
-            var edge = GetEdgeForSignal(startSignal);
-            var applicationDirection = GetSignalDirection(startSignal);
-            if (applicationDirection != null && edge != null)
-            {
-                var mainSignals = GetMainSignalsWithDirection(edge, applicationDirection.Value);
-
-                // Check for signals on the starting edge
-                var signalsAfterStartSignal = mainSignals?
-                    .Where(x => (applicationDirection == ApplicationDirection.normal) ?
-                        GetSignalCoordinate(x)?.value > GetSignalCoordinate(startSignal)?.value :
-                        GetSignalCoordinate(x)?.value < GetSignalCoordinate(startSignal)?.value)
-                    .ToList();
-
-                if (signalsAfterStartSignal?.Count() > 0)
-                {
-                    var orderedSignals = OrderedSignals(signalsAfterStartSignal, applicationDirection.Value);
-                    var endSignal = orderedSignals.First();
-                    var tvpSections = GetOverlappingTvpSections(edge, applicationDirection.Value, startSignal, endSignal);
-                    var routeData = new RouteData(startSignal) { ExitSignal = endSignal, TvpSections = tvpSections };
-                    return new List<RouteData> { AddRoute<T>(routeData) };
-                }
-                else
-                {
-                    var tvpSections = GetOverlappingTvpSections(edge, applicationDirection.Value, startSignal, null);
-                    return AddRouteForNextEdges<T>(edge, applicationDirection.Value,
-                        new RouteData(startSignal) { TvpSections = tvpSections }
-                    );
-                }
-            }
-            else
-            {
-                return new List<RouteData>();
-            }
-        }
-
-        /// <summary>
         /// Returns the edge (LinearElementWithLength) that is associated with the given signal.
         /// </summary>
         /// <param name="signal"></param>
         /// <returns></returns>
-        LinearElementWithLength? GetEdgeForSignal(Signal signal)
+        public LinearElementWithLength? GetEdgeForSignal(Signal signal)
         {
             var rsmSignal = GetRsmSignal(signal.refersToRsmSignal?.@ref ?? "");
             var element = GetSpotLocation(rsmSignal?.locations.Single().@ref ?? "")
@@ -701,7 +623,7 @@ namespace PlanningToolkit
         /// <param name="edge"></param>
         /// <param name="direction"></param>
         /// <returns></returns>
-        Turnout? GetNextPoint(LinearElementWithLength edge, ApplicationDirection direction)
+        public Turnout? GetNextPoint(LinearElementWithLength edge, ApplicationDirection direction)
         {
             var relations = GetPositionedRelationsInDirection(edge, direction);
             return GetPointFromRelations(relations);
@@ -729,91 +651,6 @@ namespace PlanningToolkit
         }
 
         /********************************* ROUTE *********************************/
-
-        /// <summary>
-        /// Find all routes for each main Signal of the station and add them to container.
-        /// </summary>
-        public List<RouteData> AddRoutes()
-        {
-            var signals = DataPrepEntities.ownsTrackAsset
-                .GetSignals()
-                .Where(x => IsMainSignal(x));
-            return signals.SelectMany(AddRoutesForStartSignal<MainRoute>).ToList();
-        }
-
-        /// <summary>
-        /// Finds edges/ poisitioned relations in direction and starts a new route finding for each.
-        /// </summary>
-        /// <param name="edge"></param>
-        /// <param name="direction"></param>
-        /// <param name="routeData"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        List<RouteData> AddRouteForNextEdges<T>(LinearElementWithLength edge, ApplicationDirection direction, RouteData routeData)
-            where T : Route, new()
-        {
-            var nextPositionedRelations = GetPositionedRelationsInDirection(edge, direction);
-            var routes = new List<RouteData>();
-            if (nextPositionedRelations != null)
-            {
-                foreach (var relation in nextPositionedRelations)
-                {
-                    var nextEdge = GetLinearElementWithLength(relation.elementA?.@ref ?? "") == edge ?
-                        GetLinearElementWithLength(relation.elementB?.@ref ?? "") :
-                        GetLinearElementWithLength(relation.elementA?.@ref ?? "");
-                    var nextPoint = GetNextPoint(edge, direction);
-                    var routeDataCopy = new RouteData(routeData.EntrySignal)
-                    {
-                        Points = new List<Tuple<Turnout, LeftRight>>(routeData.Points),
-                        TvpSections = new List<TvpSection>(routeData.TvpSections)
-                    };
-                    if (nextPoint != null)
-                    {
-                        var pointDirection = relation.leadsTowards == LeftRight.left ? LeftRight.left : LeftRight.right;
-                        routeDataCopy.Points.Add(new Tuple<Turnout, LeftRight>(nextPoint, pointDirection));
-                    }
-                    if (nextEdge != null)
-                    {
-                        routes.AddRange(AddRouteForNextEdge<T>(nextEdge, direction, routeDataCopy));
-                    }
-                }
-            }
-            return routes;
-        }
-
-        /// <summary>
-        /// Searches for main Signals with the same direction and then adds a new Route.
-        /// If none are found, it recursively searches on connected edges in that direction.
-        /// </summary>
-        /// <param name="edge"></param>
-        /// <param name="direction"></param>
-        /// <param name="routeData"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        List<RouteData> AddRouteForNextEdge<T>(LinearElementWithLength edge, ApplicationDirection direction, RouteData routeData)
-            where T : Route, new()
-        {
-            var signals = GetSignalsForEdge(edge);
-            var mainSignals = GetMainSignalsWithDirection(edge, direction);
-            var lastSectionId = routeData.TvpSections.Last().id;
-            if (mainSignals?.Count() > 0)
-            {
-                var orderedSignals = OrderedSignals(mainSignals, direction);
-                var endSignal = orderedSignals.First();
-                var tvpSection = GetOverlappingTvpSections(edge, direction, null, endSignal);
-                if (tvpSection != null)
-                {
-                    routeData.TvpSections.AddRange(tvpSection);
-                }
-                routeData.ExitSignal = endSignal;
-                return new List<RouteData> { AddRoute<T>(routeData) };
-            }
-            else
-            {
-                routeData.TvpSections.AddRange(GetOverlappingTvpSections(edge, direction, null, null));
-                return AddRouteForNextEdges<T>(edge, direction, routeData);
-            }
-        }
 
         /// <summary>
         /// Adds a new RsmRouteBody to the station.
@@ -866,7 +703,7 @@ namespace PlanningToolkit
         /// <param name="routeBody"></param>
         /// <param name="listOfSections"></param>
         /// <returns></returns>
-        private SectionList AddSectionList(RouteBody routeBody, List<tElementWithIDref> listOfSections)
+        public SectionList AddSectionList(RouteBody routeBody, List<tElementWithIDref> listOfSections)
         {
             var sectionList = new SectionList();
             sectionList.appliesToRouteBody = new tElementWithIDref(routeBody.id ?? "");
@@ -882,7 +719,7 @@ namespace PlanningToolkit
         /// <param name="route"></param>
         /// <param name="conflictedRoutes"></param>
         /// <returns></returns>
-        private ConflictingRoute AddConflictingRoute(tElementWithIDref route, List<tElementWithIDref> conflictedRoutes)
+        public ConflictingRoute AddConflictingRoute(tElementWithIDref route, List<tElementWithIDref> conflictedRoutes)
         {
             var conflictingRoute = new ConflictingRoute();
             conflictingRoute.hasConflictsWithRoute = conflictedRoutes;
@@ -899,7 +736,7 @@ namespace PlanningToolkit
         /// <param name="entrySignal"></param>
         /// <param name="exitSignal"></param>
         /// <returns></returns>
-        private RouteBody AddRouteBody(string name, tElementWithIDref entrySignal, tElementWithIDref exitSignal)
+        public RouteBody AddRouteBody(string name, tElementWithIDref entrySignal, tElementWithIDref exitSignal)
         {
             var associatedNetElements = new [] { entrySignal, exitSignal }.Select(t =>
                 GetSpotLocation(
@@ -933,53 +770,6 @@ namespace PlanningToolkit
 
             AddRouteBody(routeBody);
             return routeBody;
-        }
-
-        /// <summary>
-        /// Add a new route to the station, complete with route body, point positions and clearing sections.
-        /// </summary>
-        /// <param name="routeData"></param>
-        /// <param name="name"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public RouteData AddRoute<T>(
-            RouteData routeData
-        ) where T : Route, new()
-        {
-            var route = new T();
-
-            var routeBody = AddRouteBody(
-                String.Format("{0}.{1}",
-                    GetRsmSignal(routeData.EntrySignal.refersToRsmSignal?.@ref ?? "")?.name ?? "",
-                    GetRsmSignal(routeData.ExitSignal?.refersToRsmSignal?.@ref ?? "")?.name ?? ""),
-                new tElementWithIDref(routeData.EntrySignal.id ?? ""),
-                new tElementWithIDref(routeData.ExitSignal?.id ?? "")
-            );
-            route.appliesToRouteBody = new tElementWithIDref(routeBody.id!);
-            route.id = IdManager.computeUuid5<Route>($"{routeData.EntrySignal.id}.{routeData.ExitSignal?.id}");
-
-            // Connect routebody w/ point states
-            foreach (var point in routeData.Points)
-            {
-                var peap = AddPointElementAndPosition(routeBody, point.Item1, point.Item2);
-            }
-
-            // Connect route with sections that need to be clear for this route to be set
-            var csc = new ConditionSectionsClear()
-            {
-                affectsRoute = new tElementWithIDref(route.id ?? ""),
-                provesSection = routeData.TvpSections.Select(s => new tElementWithIDref(s.id ?? "")).ToList()
-            };
-            csc.id = IdManager.computeUuid5<ConditionSectionsClear>($"{routeData.EntrySignal.id}.{routeData.ExitSignal?.id}");
-            DataPrep.hasDataContainer[0].ownsDataPrepEntities?.ownsConditionSectionsClear.Add(csc);
-
-            var conflictingRoute = AddConflictingRoute(csc.affectsRoute, csc.provesSection);
-
-            List<tElementWithIDref> listOfSections = routeData.TvpSections.Select(s => new tElementWithIDref(s.id ?? "")).ToList();
-            var sectionList = AddSectionList(routeBody, listOfSections);
-
-            AddRoute(route);
-            return routeData;
         }
 
         public PointElementAndPosition AddPointElementAndPosition(RouteBody routeBody, Turnout point, LeftRight position)

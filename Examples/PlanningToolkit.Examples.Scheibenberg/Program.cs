@@ -1,7 +1,9 @@
 ﻿using Models.TopoModels.EULYNX.db;
 using Models.TopoModels.EULYNX.rsmCommon;
 using Models.TopoModels.EULYNX.rsmTrack;
+using Models.TopoModels.EULYNX.sig;
 using PlanningToolkit;
+using PlanningToolkit.PlanningAutomation;
 using rsmCommon = Models.TopoModels.EULYNX.rsmCommon;
 
 var builder = new PlanningBuilder();
@@ -98,12 +100,13 @@ var sZDS1 = builder.AddSignal<RastaSignal>("ZDS1", edge7, 0.2, Side.left, Applic
 var sZDS2 = builder.AddSignal<RastaSignal>("ZDS2", edge5, 0.2, Side.right, ApplicationDirection.normal, SignalTypeTypes.main, SignalFunctionTypes.block);
 var sZDS3 = builder.AddSignal<RastaSignal>("ZDS3", edge8, 0.2, Side.left, ApplicationDirection.reverse, SignalTypeTypes.main, SignalFunctionTypes.block);
 
-var sDSCL = builder.AddSignal<RastaSignal>("DSCL", edge1, 0, Side.left, ApplicationDirection.reverse, SignalTypeTypes.main, SignalFunctionTypes.trainDestinationOnlySignal);
-var sDMAR = builder.AddSignal<RastaSignal>("DMAR", edge8, 1, Side.right, ApplicationDirection.normal, SignalTypeTypes.main, SignalFunctionTypes.trainDestinationOnlySignal);
+var sDSCL = builder.AddSignal<Signal>("DSCL", edge1, 0, Side.left, ApplicationDirection.reverse, SignalTypeTypes.main, SignalFunctionTypes.trainDestinationOnlySignal);
+var sDMAR = builder.AddSignal<Signal>("DMAR", edge8, 1, Side.right, ApplicationDirection.normal, SignalTypeTypes.main, SignalFunctionTypes.trainDestinationOnlySignal);
 
 // Generate possible routes
-var routes = builder.AddRoutes();
-var conflictingRoutes = builder.AddConflictingRoutes(routes);
+var routeBuilder = new RouteBuilder(builder);
+var routes = routeBuilder.AddRoutes();
+var conflictingRoutes = routeBuilder.AddConflictingRoutes(routes);
 
 // Rasta Configuration
 
@@ -145,8 +148,6 @@ sFF.RastaId = 0;
 sZDS1.RastaId = 0;
 sZDS2.RastaId = 0;
 sZDS3.RastaId = 0;
-sDSCL.RastaId = 0;
-sDMAR.RastaId = 0;
 
 // Serialize the result
 new EulynxExport(builder.DataPrep).SerializeToFile("Scheibenberg.exml");

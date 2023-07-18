@@ -39,9 +39,17 @@ namespace PlanningToolkit
             return new EulynxImport((EulynxDataPrepInterface)serializer.Deserialize(reader));
         }
 
+        public static Type[] CustomTypes => new Type[] {
+            typeof(EulynxLiveDataContainer),
+            typeof(EulynxLiveEntities),
+            typeof(RastaSignal),
+            typeof(RastaTurnout),
+            typeof(RastaAxleCountingSection),
+            typeof(GerEtcsBaliseGroup)
+        };
+
         private static XmlSerializer CreateSerializer() {
-            return new XmlSerializer(typeof(EulynxDataPrepInterface),
-                new Type[] { typeof(RastaSignal), typeof(RastaTurnout), typeof(RastaAxleCountingSection), typeof(GerEtcsBaliseGroup) });
+            return new XmlSerializer(typeof(EulynxDataPrepInterface), CustomTypes);
         }
     }
 }

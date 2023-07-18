@@ -1,13 +1,13 @@
 ﻿using System.Xml;
 using System.Xml.Serialization;
 using Models.TopoModels.EULYNX.generic;
-using PlanningToolkit.Dataprep;
 
 namespace PlanningToolkit
 {
     public class EulynxExport
     {
         private EulynxDataPrepInterface _dp;
+
         public EulynxExport(EulynxDataPrepInterface dpInterface)
         {
             _dp = dpInterface;
@@ -44,13 +44,7 @@ namespace PlanningToolkit
         {
             XmlWriterSettings writerSettings = new XmlWriterSettings { Indent = true };
 
-            XmlSerializer serializer = new XmlSerializer(typeof(EulynxDataPrepInterface),
-                new Type[] {
-                    typeof(RastaSignal),
-                    typeof(RastaTurnout),
-                    typeof(RastaAxleCountingSection),
-                    typeof(GerEtcsBaliseGroup)
-                });
+            XmlSerializer serializer = new XmlSerializer(typeof(EulynxDataPrepInterface), EulynxImport.CustomTypes);
             XmlSerializerNamespaces xmlns = new XmlSerializerNamespaces();
 
             // set up the prefixes and namespaces
