@@ -30,4 +30,4 @@ jobs:
         run: dotnet pack -c Release --no-restore PlanningToolkit /p:Version=1.0.0-build.${{ github.run_number }}
 
       - name: Build and push NuGet Package
-        run: dotnet nuget push "PlanningToolkit/bin/Release/EulynxLive.PlanningToolkit.1.0.2-build.${{ github.run_number }}.nupkg" --api-key ${{ secrets.NUGET_REGISTRY }} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push "PlanningToolkit/bin/Release/EulynxLive.PlanningToolkit.1.0.0-build.${{ github.run_number }}.nupkg" --api-key ${{ secrets.NUGET_REGISTRY }} --source https://api.nuget.org/v3/index.json
