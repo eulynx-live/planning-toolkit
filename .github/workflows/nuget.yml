@@ -9,25 +9,25 @@ env:
     IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            packages: write
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
-        steps:
-            - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
-      with:
-          dotnet-version: 6.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+            dotnet-version: 6.0.x
 
-    - name: Restore dependencies
-      run: dotnet restore PlanningToolkit
+      - name: Restore dependencies
+        run: dotnet restore PlanningToolkit
 
-    - name: Build
-      run: dotnet pack -c Release --no-restore PlanningToolkit /p:Version=1.0.0-build.${{ github.run_number }}
+      - name: Build
+        run: dotnet pack -c Release --no-restore PlanningToolkit /p:Version=1.0.0-build.${{ github.run_number }}
 
-    - name: Build and push NuGet Package
-      run: dotnet nuget push "PlanningToolkit/bin/Release/EulynxLive.PlanningToolkit.1.0.0-build.${{ github.run_number }}.nupkg" --api-key ${{ secrets.NUGET_REGISTRY }} --source https://api.nuget.org/v3/index.json
+      - name: Build and push NuGet Package
+        run: dotnet nuget push "PlanningToolkit/bin/Release/EulynxLive.PlanningToolkit.1.0.0-build.${{ github.run_number }}.nupkg" --api-key ${{ secrets.NUGET_REGISTRY }} --source https://api.nuget.org/v3/index.json
