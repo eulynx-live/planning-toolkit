@@ -149,5 +149,10 @@ namespace PlanningToolkit
             return routeBody.requiresMovableElementInPositionInRouteBody
                 .Select(pointPosition => This.OfType<PointElementAndPosition>().Single(x => x.id == pointPosition.@ref)).ToList();
         }
+
+        public static double? GetLength(this LinearElementWithLength element)
+        {
+            return element.elementLength?.quantity.OfType<Length>().Single().value;
+        }
     }
 }
