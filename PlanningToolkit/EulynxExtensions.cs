@@ -14,7 +14,7 @@ using Models.TopoModels.EULYNX.rsmTrack;
 
 namespace PlanningToolkit
 {
-    static class EulynxExtensions
+    public static class EulynxExtensions
     {
         private static bool IsSubclassOf<BaseClass, T>() => typeof(BaseClass).IsAssignableFrom(typeof(T));
 
