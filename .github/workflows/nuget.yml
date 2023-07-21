@@ -22,6 +22,9 @@ jobs:
       uses: actions/setup-dotnet@v2
       with:
           dotnet-version: 6.0.x
+          
+    - name: Add dataprep library
+      run: dotnet nuget add source https://gitlab.com/api/v4/projects/30224934/packages/nuget/index.json -n GitLab --username ${{ secrets.GITLAB_DATAPREP_USERNAME }} --password ${{ secrets.GITLAB_DATAPREP_PASSWORD }} --store-password-in-clear-text
 
     - name: Restore dependencies
       run: dotnet restore PlanningToolkit
