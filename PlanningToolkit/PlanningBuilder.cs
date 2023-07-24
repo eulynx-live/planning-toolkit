@@ -62,7 +62,7 @@ namespace PlanningToolkit
             RsmEntities.usesTopography?.usesIntrinsicCoordinate.Add(bounds);
         private void AddSpotLocation(BaseLocation location) =>
             RsmEntities.usesLocation.Add(location);
-        private void AddLinearLocation(BaseLocation location) =>
+        private void AddLocation(BaseLocation location) =>
             RsmEntities.usesLocation.Add(location);
         private void AddTrackSignallingDevice(OnTrackSignallingDevice device) =>
             RsmEntities.ownsOnTrackSignallingDevice.Add(device);
@@ -142,7 +142,7 @@ namespace PlanningToolkit
             location.associatedNetElements.Add(netElement);
             location.id = IdManager.computeUuid5<LinearLocation>($"{netElement.bounds.Single().@ref}.{netElement?.netElement?.@ref}.{netElement?.hasLateralPosition}.{netElement?.appliesInDirection}");
 
-            AddLinearLocation(location);
+            AddLocation(location);
             return location;
         }
 
@@ -214,6 +214,13 @@ namespace PlanningToolkit
         {
             var tvpSection = new TvpSection();
             tvpSection.id = IdManager.computeUuid5<TvpSection>(name);
+            var areaLocation = new AreaLocation
+            {
+                id = IdManager.computeUuid5<AreaLocation>($"AreaLocation{name}"),
+                associatedNetElements = new List<AssociatedNetElement>()
+            };
+            tvpSection.isLocatedAt = new tElementWithIDref(areaLocation.id!);
+            AddLocation(areaLocation);
             AddTrackAsset(tvpSection);
 
             var axleCountingSection = new T();
@@ -233,7 +240,7 @@ namespace PlanningToolkit
         /// <param name="edge"></param>
         /// <param name="position"></param>
         /// <param name="tvpSectionIds"></param>
-        public void AddAxleCountingHead(string name, LinearElementWithLength edge, double position, IEnumerable<AxleCountingSection> tvpSections)
+        public void AddAxleCountingHead(string name, LinearElementWithLength edge, double position, IEnumerable<AxleCountingSection> tdsSections)
         {
             var bounds = new IntrinsicCoordinate();
             bounds.value = position;
@@ -253,8 +260,14 @@ namespace PlanningToolkit
 
             var head = new AxleCountingHead();
             head.refersToRsmVehiclePassageDetector = new tElementWithIDref(rsmHead.id!);
-            head.limitsTdsSection.AddRange(tvpSections.Select(x => x.appliesToTvpSection!));
             head.id = IdManager.computeUuid5<AxleCountingHead>(rsmHead.name);
+
+            foreach (var section in tdsSections)
+            {
+                head.limitsTdsSection.Add(new tElementWithIDref(section.id!));
+                var tvpsLocation = DataPrep.GetById<AreaLocation>(DataPrep.GetById<TvpSection>(section.appliesToTvpSection!)!.isLocatedAt!);
+                tvpsLocation!.associatedNetElements.Add(netElement);
+            }
 
             AddCoordinates(bounds);
             AddSpotLocation(location);
@@ -750,7 +763,8 @@ namespace PlanningToolkit
             var location = new LinearLocation();
             location.associatedNetElements.AddRange(associatedNetElements);
             location.id = IdManager.computeUuid5<LinearLocation>($"{entrySignal.@ref}.{exitSignal.@ref}");
-            AddLinearLocation(location);
+
+            cation(location);
             var rsmRouteBody = AddRsmRouteBody(name,
                 new List<tElementWithIDref> { new tElementWithIDref(location.id!) }.ToList()
             );
