@@ -1,3 +1,4 @@
+using Models.TopoModels.EULYNX.db;
 using Models.TopoModels.EULYNX.generic;
 using EulynxAxleCountingHead = Models.TopoModels.EULYNX.sig.AxleCountingHead;
 using Models.TopoModels.EULYNX.rsmCommon;
@@ -153,6 +154,11 @@ namespace PlanningToolkit
         public static double? GetLength(this LinearElementWithLength element)
         {
             return element.elementLength?.quantity.OfType<Length>().Single().value;
+        }
+
+        public static String? GetName(this TdsSection tdsSection)
+        {
+            return tdsSection.hasConfiguration?.hasConfigurationProperty.OfType<TdsDesignation>().Single().localName;
         }
     }
 }
