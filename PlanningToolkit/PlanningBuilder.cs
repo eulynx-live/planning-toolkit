@@ -763,8 +763,7 @@ namespace PlanningToolkit
             var location = new LinearLocation();
             location.associatedNetElements.AddRange(associatedNetElements);
             location.id = IdManager.computeUuid5<LinearLocation>($"{entrySignal.@ref}.{exitSignal.@ref}");
-
-            cation(location);
+            AddLocation(location);
             var rsmRouteBody = AddRsmRouteBody(name,
                 new List<tElementWithIDref> { new tElementWithIDref(location.id!) }.ToList()
             );
