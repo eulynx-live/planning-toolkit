@@ -160,5 +160,15 @@ namespace PlanningToolkit
         {
             return tdsSection.hasConfiguration?.hasConfigurationProperty.OfType<TdsDesignation>().Single().localName;
         }
+
+        public static PositionedRelation? GetPositionedRelationByLinearElements(this EulynxDataPrepInterface dp, LinearElementWithLength edge1, LinearElementWithLength edge2)
+        {
+            // Returns the PositionedRelation between two LinearElements. If such a relation exists, it means
+            // that a train can navigate between the two LinearElements (two sections of track), e.g. at a point
+            return dp.hasDataContainer.Single().ownsRsmEntities!.usesTrackTopology
+                ?.usesPositionedRelation.SingleOrDefault(relation =>
+                    relation.elementA.@ref == edge1.id && relation.elementB.@ref == edge2.id ||
+                    relation.elementA.@ref == edge2.id && relation.elementB.@ref == edge1.id);
+        }
     }
 }
