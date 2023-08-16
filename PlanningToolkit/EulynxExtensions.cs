@@ -170,5 +170,46 @@ namespace PlanningToolkit
                     relation.elementA.@ref == edge1.id && relation.elementB.@ref == edge2.id ||
                     relation.elementA.@ref == edge2.id && relation.elementB.@ref == edge1.id);
         }
+
+        public static bool IsInAreaLocation(this EulynxDataPrepInterface dp, LinearElementWithLength thisEdge, double thisOffset, AreaLocation? areaLocation)
+        {
+            if (areaLocation is null)
+            {
+                return false;
+            }
+            var bounds = new List<Tuple<LinearElementWithLength, double>>();
+            areaLocation.associatedNetElements.ForEach(x => bounds.Add(new Tuple<LinearElementWithLength, double>(dp.GetById<LinearElementWithLength>(x.netElement), dp.GetById<IntrinsicCoordinate>(x.bounds.Single()).value.Value)));
+            var boundOnSameEdge = bounds.Find(x => x.Item1==thisEdge);
+            if (boundOnSameEdge is null)
+            {
+                return false;
+            }
+            bounds.Remove(boundOnSameEdge);
+            if (bounds.Count == 1 && bounds.Single().Item1 == thisEdge)
+            {
+                // TdsSection is delimited by two heads an both are on this edge
+                var secondBound = bounds.Single();
+                return secondBound.Item2 > boundOnSameEdge.Item2 ? boundOnSameEdge.Item2 < thisOffset && thisOffset < secondBound.Item2 : secondBound.Item2 < thisOffset && thisOffset < boundOnSameEdge.Item2;
+            }
+            // more than two bounds or bound is on another edge, so we need to navigate the graph
+            foreach (var bound in bounds)
+            {
+                var relation = dp.GetPositionedRelationByLinearElements(boundOnSameEdge.Item1, bound.Item1);
+                if (relation is not null)
+                {
+                    var isElementA = relation.elementA!.@ref == boundOnSameEdge.Item1.id && relation is { positionOnA: Usage.end, positionOnB: Usage.start };
+                    if (isElementA && thisOffset > boundOnSameEdge.Item2 || !isElementA && thisOffset < boundOnSameEdge.Item2)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public static List<TvpSection> IsLocatedInTvpSections(this EulynxDataPrepInterface dp, LinearElementWithLength edge, double offset)
+        {
+            return dp.hasDataContainer.Single().ownsDataPrepEntities!.ownsTrackAsset.OfType<TvpSection>().Where(section => IsInAreaLocation(dp, edge, offset, dp.GetById<AreaLocation>(section.isLocatedAt!)!)).ToList();
+        }
     }
 }
