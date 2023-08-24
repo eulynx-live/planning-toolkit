@@ -151,9 +151,13 @@ namespace PlanningToolkit
         /// </summary>
         /// <param name="length"></param>
         /// <returns>The Edge</returns>
-        public LinearElementWithLength AddEdge(double length)
+        public LinearElementWithLength AddEdge(double length, string name)
         {
-            var edge = new LinearElementWithLength(length);
+            var edge = new LinearElementWithLength() {
+                elementLength = new ElementLength(length),
+                name = name,
+                id = IdManager.computeUuid5<LinearElementWithLength>(name)
+            };
             AddLinearElementWithLength(edge);
             return edge;
         }
@@ -163,9 +167,14 @@ namespace PlanningToolkit
         /// </summary>
         /// <param name="length"></param>
         /// <returns>The Edge</returns>
-        public LinearElementWithLength AddEdge(decimal length)
+        [Obsolete("EULYNX DataPrep Length can only store floating point values")]
+        public LinearElementWithLength AddEdge(decimal length, string name)
         {
-            var edge = new LinearElementWithLength(length);
+            var edge = new LinearElementWithLength() {
+                elementLength = new ElementLength((double)length),
+                name = name,
+                id = IdManager.computeUuid5<LinearElementWithLength>(name)
+            };
             AddLinearElementWithLength(edge);
             return edge;
         }

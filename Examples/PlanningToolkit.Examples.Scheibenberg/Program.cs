@@ -10,14 +10,14 @@ var builder = new PlanningBuilder();
 
 // Edges
 
-var edge1 = builder.AddEdge(769.928m);
-var edge2 = builder.AddEdge(264.983m);
-var edge3 = builder.AddEdge(263.885m);
-var edge4 = builder.AddEdge(389.040m);
-var edge5 = builder.AddEdge(1411.648m);
-var edge6 = builder.AddEdge(47.156m);
-var edge7 = builder.AddEdge(1024.627m);
-var edge8 = builder.AddEdge(3174.399m);
+var edge1 = builder.AddEdge(769.928m, "edge1");
+var edge2 = builder.AddEdge(264.983m, "edge2");
+var edge3 = builder.AddEdge(263.885m, "edge3");
+var edge4 = builder.AddEdge(389.040m, "edge4");
+var edge5 = builder.AddEdge(1411.648m, "edge5");
+var edge6 = builder.AddEdge(47.156m, "edge6");
+var edge7 = builder.AddEdge(1024.627m, "edge7");
+var edge8 = builder.AddEdge(3174.399m, "edge8");
 
 // Points
 

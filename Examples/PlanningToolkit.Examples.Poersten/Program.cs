@@ -9,10 +9,10 @@ using rsmCommon = Models.TopoModels.EULYNX.rsmCommon;
 var builder = new PlanningBuilder();
 
 // Edges
-var edge1 = builder.AddEdge((decimal)100);
-var edge2 = builder.AddEdge((decimal)101);
-var edge3 = builder.AddEdge((decimal)102);
-var edge4 = builder.AddEdge((decimal)103);
+var edge1 = builder.AddEdge(100m, "edge1");
+var edge2 = builder.AddEdge(101m, "edge2");
+var edge3 = builder.AddEdge(102m, "edge3");
+var edge4 = builder.AddEdge(103m, "edge4");
 
 // Points
 
