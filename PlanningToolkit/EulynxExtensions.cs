@@ -19,37 +19,41 @@ namespace PlanningToolkit
     {
         private static bool IsSubclassOf<BaseClass, T>() => typeof(BaseClass).IsAssignableFrom(typeof(T));
 
-        public static T? GetById<T>(this EulynxDataPrepInterface This, tElementWithIDref idRef) where T : Models.TopoModels.EULYNX.rsmCommon.BaseObject
+        public static T? GetById<T>(this EulynxDataPrepInterface This, tElementWithIDref idRef) where T : Models.TopoModels.EULYNX.rsmCommon.BaseObject {
+            return This.Get<T>().ResolveByIdRef(idRef);
+        }
+
+        public static IEnumerable<T> Get<T>(this EulynxDataPrepInterface This) where T : Models.TopoModels.EULYNX.rsmCommon.BaseObject
         {
             var dataPrep = This.hasDataContainer.Single().ownsDataPrepEntities!;
             var rsm = This.hasDataContainer.Single().ownsRsmEntities!;
 
             if (IsSubclassOf<TrackAsset, T>()) {
-                return dataPrep.ownsTrackAsset.OfType<T>().ResolveByIdRef(idRef);
+                return dataPrep.ownsTrackAsset.OfType<T>();
             } else if (IsSubclassOf<OnTrackSignallingDevice, T>()) {
-                return rsm.ownsOnTrackSignallingDevice.OfType<T>().ResolveByIdRef(idRef);
+                return rsm.ownsOnTrackSignallingDevice.OfType<T>();
             } else if (IsSubclassOf<BaseLocation, T>()) {
-                return rsm.usesLocation.OfType<T>().ResolveByIdRef(idRef);
+                return rsm.usesLocation.OfType<T>();
             }
             else if (IsSubclassOf<PositioningNetElement, T>())
             {
-                return rsm.usesTrackTopology?.usesNetElement?.OfType<T>().ResolveByIdRef(idRef);
+                return rsm.usesTrackTopology?.usesNetElement?.OfType<T>() ?? Enumerable.Empty<T>();
             }
             else if (IsSubclassOf<IntrinsicCoordinate, T>())
             {
-                return rsm.usesTopography?.usesIntrinsicCoordinate?.OfType<T>().ResolveByIdRef(idRef);
+                return rsm.usesTopography?.usesIntrinsicCoordinate?.OfType<T>() ?? Enumerable.Empty<T>();
             }
             else if (IsSubclassOf<LocationProxy, T>())
             {
-                return dataPrep.ownsLocationProxy.OfType<T>().ResolveByIdRef(idRef);
+                return dataPrep.ownsLocationProxy.OfType<T>();
             }
             else if (IsSubclassOf<BaseLocation, T>())
             {
-                return rsm.usesLocation.OfType<T>().ResolveByIdRef(idRef);
+                return rsm.usesLocation.OfType<T>();
             }
             else if (IsSubclassOf<rsmSignal, T>())
             {
-                return rsm.ownsSignal.OfType<T>().ResolveByIdRef(idRef);
+                return rsm.ownsSignal.OfType<T>();
             }
 
             throw new NotImplementedException();
