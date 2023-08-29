@@ -3,28 +3,26 @@ using Models.TopoModels.EULYNX.rsmCommon;
 using Models.TopoModels.EULYNX.rsmTrack;
 using PlanningToolkit;
 using PlanningToolkit.PlanningAutomation;
-using rsmCommon = Models.TopoModels.EULYNX.rsmCommon;
-
 
 var builder = new PlanningBuilder();
 
 // Edges
-var edge1 = builder.AddEdge(100m, "edge1");
-var edge2 = builder.AddEdge(101m, "edge2");
-var edge3 = builder.AddEdge(102m, "edge3");
-var edge4 = builder.AddEdge(103m, "edge4");
+var edge1 = builder.AddEdge(100.0, "edge1");
+var edge2 = builder.AddEdge(101.0, "edge2");
+var edge3 = builder.AddEdge(102.0, "edge3");
+var edge4 = builder.AddEdge(103.0, "edge4");
 
 // Points
 
 // W1
-var r1 = builder.ConnectEndToStart(edge1, edge3, rsmCommon.LeftRight.right);
-var r2 = builder.ConnectEndToStart(edge1, edge2, rsmCommon.LeftRight.left);
+var r1 = builder.ConnectEndToStart(edge1, edge3, LeftRight.right);
+var r2 = builder.ConnectEndToStart(edge1, edge2, LeftRight.left);
 var w1 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r1, r2 }, TurnoutOrientation.Right, "DW3");
 w1.RastaId = 230;
 
 // W2
-var r3 = builder.ConnectEndToStart(edge2, edge4, rsmCommon.LeftRight.right);
-var r4 = builder.ConnectEndToStart(edge3, edge4, rsmCommon.LeftRight.left);
+var r3 = builder.ConnectEndToStart(edge2, edge4, LeftRight.right);
+var r4 = builder.ConnectEndToStart(edge3, edge4, LeftRight.left);
 var w2 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r3, r4 }, TurnoutOrientation.Left, "DW15");
 w2.RastaId = 231;
 
@@ -85,9 +83,9 @@ sD.RastaId = 980;
 var sDTES = builder.AddSignal<RastaSignal>("DTES", edge1, 0, Side.left, ApplicationDirection.reverse, SignalTypeTypes.main, SignalFunctionTypes.trainDestinationOnlySignal);
 var sDDRE = builder.AddSignal<RastaSignal>("DDRE", edge4, 1, Side.right, ApplicationDirection.normal, SignalTypeTypes.main, SignalFunctionTypes.trainDestinationOnlySignal);
 
-var routeBuilder = new RouteBuilder(builder);
-var routes = routeBuilder.AddRoutes();
-var conflictingRoutes = routeBuilder.AddConflictingRoutes(routes);
+// var routeBuilder = new RouteBuilder(builder);
+// var routes = routeBuilder.AddRoutes();
+// var conflictingRoutes = routeBuilder.AddConflictingRoutes(routes);
 
 // Serialize to file
 new EulynxExport(builder.DataPrep).SerializeToFile("Poersten.exml");
