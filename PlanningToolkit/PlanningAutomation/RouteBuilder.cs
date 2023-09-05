@@ -1,3 +1,4 @@
+using Models.TopoModels.EULYNX.generic;
 using Models.TopoModels.EULYNX.rsmCommon;
 using Models.TopoModels.EULYNX.rsmTrack;
 using Models.TopoModels.EULYNX.sig;
@@ -18,8 +19,9 @@ public class RouteBuilder
     {
         public Signal EntrySignal { get; } = entrySignal;
         public Signal? ExitSignal { get; set; }
-        public List<Tuple<Turnout, LeftRight>> Points { get; init; } = new List<Tuple<Turnout, LeftRight>>();
+        public List<(Turnout, Models.TopoModels.EULYNX.rsmCommon.LeftRight)> Points { get; init; } = new();
         public List<TvpSection> TvpSections { get; init; } = new List<TvpSection>();
+        public List<(string Edge, double Offset)> Area { get; set; } = new();
     }
 
     /// <summary>
@@ -30,33 +32,36 @@ public class RouteBuilder
     /// <returns></returns>
     private List<RouteData> AddRoutesForStartSignal<T>(Signal startSignal) where T : Route, new()
     {
-        var edge = _builder.GetEdgeForSignal(startSignal);
+        var routeData = new RouteData(startSignal);
+        var startSignalOffset = _builder.GetSignalCoordinate(startSignal).value!.Value;
+        var edge = _builder.GetEdgeForSignal(startSignal)!;
+        routeData.Area.Add((edge.id!, startSignalOffset));
         var applicationDirection = _builder.GetSignalDirection(startSignal);
         if (applicationDirection != null && edge != null)
         {
             var mainSignals = _builder.GetMainSignalsWithDirection(edge, applicationDirection.Value);
 
             // Check for signals on the starting edge
-            var signalsAfterStartSignal = mainSignals?
+            var signalsAfterStartSignal = mainSignals
                 .Where(x => (applicationDirection == ApplicationDirection.normal) ?
-                    _builder.GetSignalCoordinate(x)?.value > _builder.GetSignalCoordinate(startSignal)?.value :
-                    _builder.GetSignalCoordinate(x)?.value < _builder.GetSignalCoordinate(startSignal)?.value)
+                    _builder.GetSignalCoordinate(x)?.value > startSignalOffset :
+                    _builder.GetSignalCoordinate(x)?.value < startSignalOffset)
                 .ToList();
 
-            if (signalsAfterStartSignal?.Count() > 0)
+            if (signalsAfterStartSignal.Count > 0)
             {
                 var orderedSignals = _builder.OrderedSignals(signalsAfterStartSignal, applicationDirection.Value);
                 var endSignal = orderedSignals.First();
-                var tvpSections = _builder.GetOverlappingTvpSections(edge, applicationDirection.Value, startSignal, endSignal);
-                var routeData = new RouteData(startSignal) { ExitSignal = endSignal, TvpSections = tvpSections };
+                var endSignalOffset = _builder.GetSignalCoordinate(endSignal).value!.Value;
+                routeData.ExitSignal = endSignal;
+                routeData.Area.Add((edge.id!, endSignalOffset));
+                routeData.TvpSections.AddRange(_builder.GetOverlappingTvpSections(routeData.Area));
                 return new List<RouteData> { AddRoute<T>(routeData) };
             }
             else
             {
-                var tvpSections = _builder.GetOverlappingTvpSections(edge, applicationDirection.Value, startSignal, null);
-                return AddRouteForNextEdges<T>(edge, applicationDirection.Value,
-                    new RouteData(startSignal) { TvpSections = tvpSections }
-                );
+                routeData.Area.Add((edge.id!, startSignalOffset));
+                return AddRouteForNextEdges<T>(edge, applicationDirection.Value, routeData);
             }
         }
         else
@@ -79,28 +84,24 @@ public class RouteBuilder
     {
         var nextPositionedRelations = _builder.GetPositionedRelationsInDirection(edge, direction);
         var routes = new List<RouteData>();
-        if (nextPositionedRelations != null)
+        foreach (var relation in nextPositionedRelations)
         {
-            foreach (var relation in nextPositionedRelations)
+            var nextEdge = _builder.GetLinearElementWithLength(relation.elementA!.@ref) == edge ?
+                _builder.GetLinearElementWithLength(relation.elementB!.@ref) :
+                _builder.GetLinearElementWithLength(relation.elementA!.@ref);
+            var nextPoint = _builder.GetNextPoint(edge, direction);
+            var routeDataCopy = new RouteData(routeData.EntrySignal)
             {
-                var nextEdge = _builder.GetLinearElementWithLength(relation.elementA?.@ref ?? "") == edge ?
-                    _builder.GetLinearElementWithLength(relation.elementB?.@ref ?? "") :
-                    _builder.GetLinearElementWithLength(relation.elementA?.@ref ?? "");
-                var nextPoint = _builder.GetNextPoint(edge, direction);
-                var routeDataCopy = new RouteData(routeData.EntrySignal)
-                {
-                    Points = new List<Tuple<Turnout, LeftRight>>(routeData.Points),
-                    TvpSections = new List<TvpSection>(routeData.TvpSections)
-                };
-                if (nextPoint != null)
-                {
-                    var pointDirection = relation.leadsTowards == LeftRight.left ? LeftRight.left : LeftRight.right;
-                    routeDataCopy.Points.Add(new Tuple<Turnout, LeftRight>(nextPoint, pointDirection));
-                }
-                if (nextEdge != null)
-                {
-                    routes.AddRange(AddRouteForNextEdge<T>(nextEdge, direction, routeDataCopy));
-                }
+                Points = new(routeData.Points),
+                Area = new(routeData.Area)
+            };
+            if (nextPoint != null)
+            {
+                routeDataCopy.Points.Add((nextPoint, relation.leadsTowards!.Value));
+            }
+            if (nextEdge != null)
+            {
+                routes.AddRange(AddRouteForNextEdge<T>(nextEdge, direction, routeDataCopy));
             }
         }
         return routes;
@@ -118,24 +119,23 @@ public class RouteBuilder
     List<RouteData> AddRouteForNextEdge<T>(LinearElementWithLength edge, ApplicationDirection direction, RouteData routeData)
         where T : Route, new()
     {
-        var signals = _builder.GetSignalsForEdge(edge);
+        routeData.Area.Add((edge.id!, 0));
         var mainSignals = _builder.GetMainSignalsWithDirection(edge, direction);
-        var lastSectionId = routeData.TvpSections.Last().id;
-        if (mainSignals?.Count() > 0)
+        if (mainSignals.Count > 0)
         {
             var orderedSignals = _builder.OrderedSignals(mainSignals, direction);
-            var endSignal = orderedSignals.First();
-            var tvpSection = _builder.GetOverlappingTvpSections(edge, direction, null, endSignal);
-            if (tvpSection != null)
-            {
-                routeData.TvpSections.AddRange(tvpSection);
-            }
-            routeData.ExitSignal = endSignal;
+            var nextSignal = orderedSignals.First();
+            var nextSignalOffset = _builder.GetSignalCoordinate(nextSignal).value!.Value;
+            routeData.Area.Add((edge.id!, nextSignalOffset));
+
+            routeData.TvpSections.AddRange(_builder.GetOverlappingTvpSections(routeData.Area));
+            routeData.ExitSignal = nextSignal;
             return new List<RouteData> { AddRoute<T>(routeData) };
         }
         else
         {
-            routeData.TvpSections.AddRange(_builder.GetOverlappingTvpSections(edge, direction, null, null));
+            routeData.Area.Add((edge.id!, 1));
+            routeData.TvpSections.AddRange(_builder.GetOverlappingTvpSections(routeData.Area));
             return AddRouteForNextEdges<T>(edge, direction, routeData);
         }
     }
@@ -164,7 +164,7 @@ public class RouteBuilder
         var route = new T();
 
         var routeBody = _builder.AddRouteBody(
-            String.Format("{0}.{1}",
+            string.Format("{0}.{1}",
                 _builder.GetRsmSignal(routeData.EntrySignal.refersToRsmSignal?.@ref ?? "")?.name ?? "",
                 _builder.GetRsmSignal(routeData.ExitSignal?.refersToRsmSignal?.@ref ?? "")?.name ?? ""),
             new tElementWithIDref(routeData.EntrySignal.id ?? ""),
@@ -180,17 +180,17 @@ public class RouteBuilder
         }
 
         // Connect route with sections that need to be clear for this route to be set
-        var csc = new ConditionSectionsClear()
+        var csc = new ConditionSectionsClear
         {
             affectsRoute = new tElementWithIDref(route.id ?? ""),
-            provesSection = routeData.TvpSections.Select(s => new tElementWithIDref(s.id ?? "")).ToList()
+            provesSection = routeData.TvpSections.Select(s => new tElementWithIDref(s.id ?? "")).ToList(),
+            id = IdManager.computeUuid5<ConditionSectionsClear>($"{routeData.EntrySignal.id}.{routeData.ExitSignal?.id}")
         };
-        csc.id = IdManager.computeUuid5<ConditionSectionsClear>($"{routeData.EntrySignal.id}.{routeData.ExitSignal?.id}");
         _builder.DataPrep.hasDataContainer[0].ownsDataPrepEntities?.ownsConditionSectionsClear.Add(csc);
 
         var conflictingRoute = _builder.AddConflictingRoute(csc.affectsRoute, csc.provesSection);
 
-        List<tElementWithIDref> listOfSections = routeData.TvpSections.Select(s => new tElementWithIDref(s.id ?? "")).ToList();
+        var listOfSections = routeData.TvpSections.Select(s => new tElementWithIDref(s.id ?? "")).ToList();
         var sectionList = _builder.AddSectionList(routeBody, listOfSections);
 
         _builder.AddRoute(route);
@@ -203,9 +203,9 @@ public class RouteBuilder
     /// </summary>
     /// <param name="routes"></param>
     /// <returns></returns>
-    public Dictionary<String, List<RouteData>> AddConflictingRoutes(List<RouteData> routes)
+    public Dictionary<string, List<RouteData>> AddConflictingRoutes(List<RouteData> routes)
     {
-        var conflictingRoutesMap = new Dictionary<String, List<RouteData>>();
+        var conflictingRoutesMap = new Dictionary<string, List<RouteData>>();
         for (int i = 0; i < routes.Count(); i++)
         {
             // WARNING: We assume that there is only ever one route from entrySignal to exitSignal!

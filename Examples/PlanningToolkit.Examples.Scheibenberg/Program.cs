@@ -4,84 +4,142 @@ using Models.TopoModels.EULYNX.rsmTrack;
 using Models.TopoModels.EULYNX.sig;
 using PlanningToolkit;
 using PlanningToolkit.PlanningAutomation;
-using rsmCommon = Models.TopoModels.EULYNX.rsmCommon;
 
 var builder = new PlanningBuilder();
 
 // Edges
 
-var edge1 = builder.AddEdge(769.928m, "edge1");
-var edge2 = builder.AddEdge(264.983m, "edge2");
-var edge3 = builder.AddEdge(263.885m, "edge3");
-var edge4 = builder.AddEdge(389.040m, "edge4");
-var edge5 = builder.AddEdge(1411.648m, "edge5");
-var edge6 = builder.AddEdge(47.156m, "edge6");
-var edge7 = builder.AddEdge(1024.627m, "edge7");
-var edge8 = builder.AddEdge(3174.399m, "edge8");
+var edge1 = builder.AddEdge(769.928, "edge1");
+var edge2 = builder.AddEdge(264.983, "edge2");
+var edge3 = builder.AddEdge(263.885, "edge3");
+var edge4 = builder.AddEdge(389.040, "edge4");
+var edge5 = builder.AddEdge(1411.648, "edge5");
+var edge6 = builder.AddEdge(47.156, "edge6");
+var edge7 = builder.AddEdge(1024.627, "edge7");
+var edge8 = builder.AddEdge(3174.399, "edge8");
 
 // Points
 
 // W1
-var r1 = builder.ConnectEndToStart(edge1, edge5, rsmCommon.LeftRight.right);
-var r2 = builder.ConnectEndToStart(edge1, edge4, rsmCommon.LeftRight.left);
+var r1 = builder.ConnectEndToStart(edge1, edge5, LeftRight.right);
+var r2 = builder.ConnectEndToStart(edge1, edge4, LeftRight.left);
 var w1 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r1, r2 }, TurnoutOrientation.Left, "W1");
 
 // W2
-var r3 = builder.ConnectEndToStart(edge2, edge6, rsmCommon.LeftRight.right);
-var r4 = builder.ConnectEndToStart(edge3, edge6, rsmCommon.LeftRight.left);
+var r3 = builder.ConnectEndToStart(edge2, edge6, LeftRight.right);
+var r4 = builder.ConnectEndToStart(edge3, edge6, LeftRight.left);
 var w2 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r3, r4 }, TurnoutOrientation.Left, "W2");
 
 // W3
-var r5 = builder.ConnectEndToStart(edge6, edge7, rsmCommon.LeftRight.right);
-var r6 = builder.ConnectEndToStart(edge4, edge7, rsmCommon.LeftRight.left);
+var r5 = builder.ConnectEndToStart(edge6, edge7, LeftRight.right);
+var r6 = builder.ConnectEndToStart(edge4, edge7, LeftRight.left);
 var w3 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r5, r6 }, TurnoutOrientation.Right, "W3");
 
 // W4
-var r7 = builder.ConnectEndToStart(edge7, edge8, rsmCommon.LeftRight.right);
-var r8 = builder.ConnectEndToStart(edge5, edge8, rsmCommon.LeftRight.left);
+var r7 = builder.ConnectEndToStart(edge7, edge8, LeftRight.right);
+var r8 = builder.ConnectEndToStart(edge5, edge8, LeftRight.left);
 var w4 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r7, r8 }, TurnoutOrientation.Right, "W4");
 
+// Axle Counting Heads
+var head_A__103 = builder.AddAxleCountingHead("A/103", edge1, 0.5194);
+var head_103__203 = builder.AddAxleCountingHead("103/203", edge1, 0.6493);
+var head_203__W1 = builder.AddAxleCountingHead("203/W1", edge1, 0.9947);
+var head_W1__403 = builder.AddAxleCountingHead("W1/403", edge4, 0.2498);
+var head_W1__504 = builder.AddAxleCountingHead("W1/504", edge5, 0.2690);
+var head_403__503 = builder.AddAxleCountingHead("403/503", edge4, 0.4770);
+var head_503__W3 = builder.AddAxleCountingHead("503/W3", edge4, 0.8231);
+var head_504__604 = builder.AddAxleCountingHead("504/604", edge5, 0.2262);
+var head_501__W3 = builder.AddAxleCountingHead("501/W3", edge2, 0.5900);
+var head_502__W3 = builder.AddAxleCountingHead("502/W3", edge3, 0.5919);
+var head_W3__603 = builder.AddAxleCountingHead("W3/603", edge7, 0.0324);
+var head_604__704 = builder.AddAxleCountingHead("604/704", edge5, 0.2975);
+var head_603__703 = builder.AddAxleCountingHead("603/703", edge7, 0.2071);
+var head_703__101 = builder.AddAxleCountingHead("703/101", edge7, 0.3145);
+var head_704__102 = builder.AddAxleCountingHead("704/102", edge5, 0.5007);
+var head_101__W4 = builder.AddAxleCountingHead("101/W4", edge7, 0.8903);
+var head_102__W4 = builder.AddAxleCountingHead("102/W4", edge5, 0.9202);
+var head_W4__201 = builder.AddAxleCountingHead("W4/201", edge8, 0.0002);
+var head_201 = builder.AddAxleCountingHead("201/-", edge8, 0.0276);
 
 // Axle Counting Sections
-var sectionA = builder.AddAxleCountingSection<RastaAxleCountingSection>("A");
-var section103 = builder.AddAxleCountingSection<RastaAxleCountingSection>("103");
-var section203 = builder.AddAxleCountingSection<RastaAxleCountingSection>("203");
-var sectionW1 = builder.AddAxleCountingSection<RastaAxleCountingSection>("W1");
-var section403 = builder.AddAxleCountingSection<RastaAxleCountingSection>("403");
-var section504 = builder.AddAxleCountingSection<RastaAxleCountingSection>("504");
-var section503 = builder.AddAxleCountingSection<RastaAxleCountingSection>("503");
-var sectionW3 = builder.AddAxleCountingSection<RastaAxleCountingSection>("W3");
-var section604 = builder.AddAxleCountingSection<RastaAxleCountingSection>("604");
-var section501 = builder.AddAxleCountingSection<RastaAxleCountingSection>("501");
-var section502 = builder.AddAxleCountingSection<RastaAxleCountingSection>("502");
-var section603 = builder.AddAxleCountingSection<RastaAxleCountingSection>("603");
-var section704 = builder.AddAxleCountingSection<RastaAxleCountingSection>("704");
-var section703 = builder.AddAxleCountingSection<RastaAxleCountingSection>("703");
-var section101 = builder.AddAxleCountingSection<RastaAxleCountingSection>("101");
-var section102 = builder.AddAxleCountingSection<RastaAxleCountingSection>("102");
-var sectionW4 = builder.AddAxleCountingSection<RastaAxleCountingSection>("W4");
-var section201 = builder.AddAxleCountingSection<RastaAxleCountingSection>("201");
-
-// Axle Counting Heads
-builder.AddAxleCountingHead("A/103", edge1, 0.5194, new[] { sectionA, section103 });
-builder.AddAxleCountingHead("103/203", edge1, 0.6493, new[] { section103, section203 });
-builder.AddAxleCountingHead("203/W1", edge1, 0.9947, new[] { section203, sectionW1 });
-builder.AddAxleCountingHead("W1/403", edge4, 0.2498, new[] { sectionW1, section403 });
-builder.AddAxleCountingHead("W1/504", edge5, 0.2690, new[] { sectionW1, section504 });
-builder.AddAxleCountingHead("403/503", edge4, 0.4770, new[] { section403, section503 });
-builder.AddAxleCountingHead("503/W3", edge4, 0.8231, new[] { section503, sectionW3 });
-builder.AddAxleCountingHead("504/604", edge5, 0.2262, new[] { section504, section604 });
-builder.AddAxleCountingHead("501/W3", edge2, 0.5900, new[] { section501, sectionW3 });
-builder.AddAxleCountingHead("502/W3", edge3, 0.5919, new[] { section502, sectionW3 });
-builder.AddAxleCountingHead("W3/603", edge7, 0.0324, new[] { sectionW3, section603 });
-builder.AddAxleCountingHead("604/704", edge5, 0.2975, new[] { section604, section704 });
-builder.AddAxleCountingHead("603/703", edge7, 0.2071, new[] { section603, section703 });
-builder.AddAxleCountingHead("703/101", edge7, 0.3145, new[] { section703, section101 });
-builder.AddAxleCountingHead("704/102", edge5, 0.5007, new[] { section704, section102 });
-builder.AddAxleCountingHead("101/W4", edge7, 0.8903, new[] { section101, sectionW4 });
-builder.AddAxleCountingHead("102/W4", edge5, 0.9202, new[] { section102, sectionW4 });
-builder.AddAxleCountingHead("W4/201", edge8, 0.0002, new[] { sectionW4, section201 });
-builder.AddAxleCountingHead("201/-", edge8, 0.0276, new[] { section201 });
+var sectionA = builder.AddAxleCountingSection<RastaAxleCountingSection>("A")
+    .WithAssociatedHead(head_A__103)
+    .LimitedByUnconnectedEndOfEdge(edge1)
+    .Build();
+var section103 = builder.AddAxleCountingSection<RastaAxleCountingSection>("103")
+    .WithAssociatedHead(head_A__103)
+    .WithAssociatedHead(head_103__203)
+    .Build();
+var section203 = builder.AddAxleCountingSection<RastaAxleCountingSection>("203")
+    .WithAssociatedHead(head_103__203)
+    .WithAssociatedHead(head_203__W1)
+    .Build();
+var sectionW1 = builder.AddAxleCountingSection<RastaAxleCountingSection>("W1")
+    .WithAssociatedHead(head_203__W1)
+    .WithAssociatedHead(head_W1__403)
+    .WithAssociatedHead(head_W1__504)
+    .Build();
+var section403 = builder.AddAxleCountingSection<RastaAxleCountingSection>("403")
+    .WithAssociatedHead(head_W1__403)
+    .WithAssociatedHead(head_403__503)
+    .Build();
+var section504 = builder.AddAxleCountingSection<RastaAxleCountingSection>("504")
+    .WithAssociatedHead(head_504__604)
+    .WithAssociatedHead(head_W1__504)
+    .Build();
+var section503 = builder.AddAxleCountingSection<RastaAxleCountingSection>("503")
+    .WithAssociatedHead(head_503__W3)
+    .WithAssociatedHead(head_403__503)
+    .Build();
+var sectionW3 = builder.AddAxleCountingSection<RastaAxleCountingSection>("W3")
+    .WithAssociatedHead(head_W3__603)
+    .WithAssociatedHead(head_501__W3)
+    .WithAssociatedHead(head_502__W3)
+    .WithAssociatedHead(head_503__W3)
+    .CoveringEdge(edge6)
+    .Build();
+var section604 = builder.AddAxleCountingSection<RastaAxleCountingSection>("604")
+    .WithAssociatedHead(head_604__704)
+    .WithAssociatedHead(head_504__604)
+    .Build();
+var section501 = builder.AddAxleCountingSection<RastaAxleCountingSection>("501")
+    .WithAssociatedHead(head_501__W3)
+    .LimitedByUnconnectedEndOfEdge(edge2)
+    .Build();
+var section502 = builder.AddAxleCountingSection<RastaAxleCountingSection>("502")
+    .WithAssociatedHead(head_502__W3)
+    .LimitedByUnconnectedEndOfEdge(edge3)
+    .Build();
+var section603 = builder.AddAxleCountingSection<RastaAxleCountingSection>("603")
+    .WithAssociatedHead(head_603__703)
+    .WithAssociatedHead(head_W3__603)
+    .Build();
+var section704 = builder.AddAxleCountingSection<RastaAxleCountingSection>("704")
+    .WithAssociatedHead(head_704__102)
+    .WithAssociatedHead(head_604__704)
+    .Build();
+var section703 = builder.AddAxleCountingSection<RastaAxleCountingSection>("703")
+    .WithAssociatedHead(head_703__101)
+    .WithAssociatedHead(head_603__703)
+    .Build();
+var section101 = builder.AddAxleCountingSection<RastaAxleCountingSection>("101")
+    .WithAssociatedHead(head_101__W4)
+    .WithAssociatedHead(head_703__101)
+    .Build();
+var section102 = builder.AddAxleCountingSection<RastaAxleCountingSection>("102")
+    .WithAssociatedHead(head_102__W4)
+    .WithAssociatedHead(head_103__203)
+    .WithAssociatedHead(head_704__102)
+    .Build();
+var sectionW4 = builder.AddAxleCountingSection<RastaAxleCountingSection>("W4")
+    .WithAssociatedHead(head_W4__201)
+    .WithAssociatedHead(head_101__W4)
+    .WithAssociatedHead(head_102__W4)
+    .Build();
+var section201 = builder.AddAxleCountingSection<RastaAxleCountingSection>("201")
+    .WithAssociatedHead(head_201)
+    .WithAssociatedHead(head_W4__201)
+    .Build();
 
 // Signals
 

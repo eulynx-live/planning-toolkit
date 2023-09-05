@@ -43,6 +43,10 @@ namespace PlanningToolkit
             {
                 return rsm.usesTopography?.usesIntrinsicCoordinate?.OfType<T>() ?? Enumerable.Empty<T>();
             }
+            else if (IsSubclassOf<PositionedRelation, T>())
+            {
+                return rsm.usesTrackTopology?.usesPositionedRelation.OfType<T>() ?? Enumerable.Empty<T>();
+            }
             else if (IsSubclassOf<LocationProxy, T>())
             {
                 return dataPrep.ownsLocationProxy.OfType<T>();

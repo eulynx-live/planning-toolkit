@@ -14,6 +14,7 @@ using Models.TopoModels.EULYNX.rsmTrack;
 using VehiclePassageDetector = Models.TopoModels.EULYNX.rsmSig.VehiclePassageDetector;
 using RsmRouteBody = Models.TopoModels.EULYNX.rsmSig.RouteBody;
 using RouteBody = Models.TopoModels.EULYNX.sig.RouteBody;
+using PlanningToolkit.Builder;
 
 namespace PlanningToolkit
 {
@@ -33,11 +34,15 @@ namespace PlanningToolkit
         {
             DataPrep = new();
 
-            var container = new DataContainer();
-            container.ownsDataPrepEntities = new();
-            container.ownsRsmEntities = new();
-            container.ownsRsmEntities.usesTrackTopology = new();
-            container.ownsRsmEntities.usesTopography = new();
+            var container = new DataContainer
+            {
+                ownsDataPrepEntities = new(),
+                ownsRsmEntities = new()
+                {
+                    usesTrackTopology = new(),
+                    usesTopography = new()
+                }
+            };
 
             DataPrep.hasDataContainer.Add(container);
         }
@@ -56,25 +61,29 @@ namespace PlanningToolkit
             RsmEntities.usesLocation.Where(l => l.id == location).Single() as LinearLocation;
         public RsmSignal? GetRsmSignal(String signalId) =>
             RsmEntities.ownsSignal.Where(s => s.id == signalId).Single();
-        private void AddTrackAsset(TrackAsset asset) =>
+        public void AddTrackAsset(TrackAsset asset) =>
             DataPrepEntities.ownsTrackAsset?.Add(asset);
-        private void AddCoordinates(IntrinsicCoordinate bounds) =>
+        public void AddCoordinates(IntrinsicCoordinate bounds) {
+            if (RsmEntities.usesTopography?.usesIntrinsicCoordinate.Any(x => x.id == bounds.id) ?? false)
+                //  throw new Exception("duplicate key");
+                return;
             RsmEntities.usesTopography?.usesIntrinsicCoordinate.Add(bounds);
-        private void AddSpotLocation(BaseLocation location) =>
+        }
+        public void AddSpotLocation(BaseLocation location) =>
             RsmEntities.usesLocation.Add(location);
-        private void AddLocation(BaseLocation location) =>
+        public void AddLocation(BaseLocation location) =>
             RsmEntities.usesLocation.Add(location);
-        private void AddTrackSignallingDevice(OnTrackSignallingDevice device) =>
+        public void AddTrackSignallingDevice(OnTrackSignallingDevice device) =>
             RsmEntities.ownsOnTrackSignallingDevice.Add(device);
-        private void AddRsmSignal(RsmSignal signal) =>
+        public void AddRsmSignal(RsmSignal signal) =>
             RsmEntities.ownsSignal.Add(signal);
-        private void AddLinearElementWithLength(LinearElementWithLength element) =>
+        public void AddLinearElementWithLength(LinearElementWithLength element) =>
             RsmEntities.usesTrackTopology?.usesNetElement.Add(element);
-        private void AddPositionedRelation(PositionedRelation relation) =>
+        public void AddPositionedRelation(PositionedRelation relation) =>
             RsmEntities.usesTrackTopology?.usesPositionedRelation?.Add(relation);
-        private void AddPoint<T>(T point) where T : Turnout =>
+        public void AddPoint<T>(T point) where T : Turnout =>
             RsmEntities.ownsPoint.Add(point);
-        private void AddRsmRouteBody(RsmRouteBody rsmRouteBody) =>
+        public void AddRsmRouteBody(RsmRouteBody rsmRouteBody) =>
             RsmEntities.ownsRouteBody?.Add(rsmRouteBody);
         public void AddRouteBody(RouteBody routeBody) =>
             DataPrepEntities.ownsRouteBody.Add(routeBody);
@@ -93,7 +102,7 @@ namespace PlanningToolkit
         /// <param name="bounds"></param>
         /// <param name="edge"></param>
         /// <returns></returns>
-        private AssociatedNetElement AddNetElement(Side side, ApplicationDirection direction, IntrinsicCoordinate bounds, LinearElementWithLength edge)
+        public AssociatedNetElement MakeNetElement(Side side, ApplicationDirection direction, IntrinsicCoordinate bounds, LinearElementWithLength edge)
         {
             var netElement = new AssociatedNetElement
             {
@@ -116,7 +125,7 @@ namespace PlanningToolkit
         /// <returns></returns>
         private SpotLocation AddSpotLocation(Side side, ApplicationDirection direction, IntrinsicCoordinate bounds, LinearElementWithLength edge)
         {
-            var netElement = AddNetElement(side, direction, bounds, edge);
+            var netElement = MakeNetElement(side, direction, bounds, edge);
 
             var location = new SpotLocation();
             location.associatedNetElements.Add(netElement);
@@ -136,7 +145,7 @@ namespace PlanningToolkit
         /// <returns></returns>
         private LinearLocation AddLinearLocation(Side side, ApplicationDirection direction, IntrinsicCoordinate bounds, LinearElementWithLength edge)
         {
-            var netElement = AddNetElement(side, direction, bounds, edge);
+            var netElement = MakeNetElement(side, direction, bounds, edge);
 
             var location = new LinearLocation();
             location.associatedNetElements.Add(netElement);
@@ -202,16 +211,14 @@ namespace PlanningToolkit
         /// <param name="edge"></param>
         /// <param name="direction"></param>
         /// <returns></returns>
-        public IEnumerable<PositionedRelation>? GetPositionedRelationsInDirection(LinearElementWithLength edge, ApplicationDirection direction)
+        public IEnumerable<PositionedRelation> GetPositionedRelationsInDirection(LinearElementWithLength edge, ApplicationDirection direction)
         {
             return RsmEntities.usesTrackTopology?.usesPositionedRelation
                 .Where(r =>
                 {
                     return (direction == ApplicationDirection.normal) ? r.elementA?.@ref == edge.id : r.elementB?.@ref == edge.id;
-                });
+                }) ?? Enumerable.Empty<PositionedRelation>();
         }
-
-        /********************************* AXLE COUNTING *********************************/
 
         /// <summary>
         /// Add an asset of type AxleCountingSection to the train station
@@ -219,27 +226,9 @@ namespace PlanningToolkit
         /// <param name="name">The name of the AxleCountingSection</param>
         /// <typeparam name="T">The type of AxleCountingSection</typeparam>
         /// <returns>The AxleCountingSection</returns>
-        public T AddAxleCountingSection<T>(string name) where T : AxleCountingSection, new()
+        public AxleCountingSectionBuilder<T> AddAxleCountingSection<T>(string name) where T : AxleCountingSection, new()
         {
-            var tvpSection = new TvpSection();
-            tvpSection.id = IdManager.computeUuid5<TvpSection>(name);
-            var areaLocation = new AreaLocation
-            {
-                id = IdManager.computeUuid5<AreaLocation>($"AreaLocation{name}"),
-                associatedNetElements = new List<AssociatedNetElement>()
-            };
-            tvpSection.isLocatedAt = new tElementWithIDref(areaLocation.id!);
-            AddLocation(areaLocation);
-            AddTrackAsset(tvpSection);
-
-            var axleCountingSection = new T();
-            axleCountingSection.hasConfiguration = new Configuration();
-            axleCountingSection.hasConfiguration.hasConfigurationProperty.Add(new TdsDesignation { localName = name, longNameLayoutPlan = name });
-            axleCountingSection.appliesToTvpSection = new tElementWithIDref(tvpSection.id!);
-            axleCountingSection.id = IdManager.computeUuid5<AxleCountingSection>(name);
-            AddTrackAsset(axleCountingSection);
-
-            return axleCountingSection;
+            return new AxleCountingSectionBuilder<T>(name, this);
         }
 
         /// <summary>
@@ -249,39 +238,40 @@ namespace PlanningToolkit
         /// <param name="edge"></param>
         /// <param name="position"></param>
         /// <param name="tvpSectionIds"></param>
-        public void AddAxleCountingHead(string name, LinearElementWithLength edge, double position, IEnumerable<AxleCountingSection> tdsSections)
+        public AxleCountingHead AddAxleCountingHead(string name, LinearElementWithLength edge, double position)
         {
-            var bounds = new IntrinsicCoordinate();
-            bounds.value = position;
-            bounds.id = IdManager.computeUuid5<IntrinsicCoordinate>(name + bounds.value.ToString() + position.ToString());
+            var bounds = new IntrinsicCoordinate
+            {
+                value = position,
+                id = IdManager.computeUuid5<IntrinsicCoordinate>(name + position.ToString())
+            };
 
             var location = new SpotLocation();
-            var netElement = AddNetElement(Side.right, ApplicationDirection.undefined, bounds, edge);
+            var netElement = MakeNetElement(Side.right, ApplicationDirection.undefined, bounds, edge);
 
             location.associatedNetElements.Add(netElement);
             location.id = IdManager.computeUuid5<SpotLocation>($"{bounds.id}.{edge.id}");
 
-            var rsmHead = new Models.TopoModels.EULYNX.rsmSig.VehiclePassageDetector();
-            rsmHead.name = name;
-            rsmHead.longname = rsmHead.name;
-            rsmHead.id = IdManager.computeUuid5<Models.TopoModels.EULYNX.rsmSig.VehiclePassageDetector>(rsmHead.name);
+            var rsmHead = new VehiclePassageDetector
+            {
+                name = name,
+                longname = name,
+                id = IdManager.computeUuid5<Models.TopoModels.EULYNX.rsmSig.VehiclePassageDetector>(name)
+            };
             rsmHead.locations.Add(new tElementWithIDref(location.id!));
 
-            var head = new AxleCountingHead();
-            head.refersToRsmVehiclePassageDetector = new tElementWithIDref(rsmHead.id!);
-            head.id = IdManager.computeUuid5<AxleCountingHead>(rsmHead.name);
-
-            foreach (var section in tdsSections)
+            var head = new AxleCountingHead
             {
-                head.limitsTdsSection.Add(new tElementWithIDref(section.id!));
-                var tvpsLocation = DataPrep.GetById<AreaLocation>(DataPrep.GetById<TvpSection>(section.appliesToTvpSection!)!.isLocatedAt!);
-                tvpsLocation!.associatedNetElements.Add(netElement);
-            }
+                refersToRsmVehiclePassageDetector = new tElementWithIDref(rsmHead.id!),
+                id = IdManager.computeUuid5<AxleCountingHead>(rsmHead.name)
+            };
 
             AddCoordinates(bounds);
             AddSpotLocation(location);
             AddTrackSignallingDevice(rsmHead);
             AddTrackAsset(head);
+
+            return head;
         }
 
         /// <summary>
@@ -454,19 +444,15 @@ namespace PlanningToolkit
         /// </summary>
         /// <param name="signal"></param>
         /// <returns></returns>
-        public IntrinsicCoordinate? GetSignalCoordinate(Signal signal) {
+        public IntrinsicCoordinate GetSignalCoordinate(Signal signal) {
             if (signal.refersToRsmSignal == null)
                 throw new ArgumentException();
 
-            var rsmSignal = DataPrep.GetById<RsmSignal>(signal.refersToRsmSignal);
-            if (rsmSignal == null)
-                throw new ArgumentException();
+            var rsmSignal = DataPrep.GetById<RsmSignal>(signal.refersToRsmSignal) ?? throw new ArgumentException();
 
-            var spotLocation = DataPrep.GetById<SpotLocation>(rsmSignal.locations.Single());
-            if (spotLocation == null)
-                throw new ArgumentException();
+            var spotLocation = DataPrep.GetById<SpotLocation>(rsmSignal.locations.Single()) ?? throw new ArgumentException();
 
-            return GetCoordinates(spotLocation.associatedNetElements.Single().bounds.Single().@ref);
+            return GetCoordinates(spotLocation.associatedNetElements.Single().bounds.Single().@ref) ?? throw new ArgumentException();
         }
 
         // GetCoordinates(
@@ -541,37 +527,65 @@ namespace PlanningToolkit
                 GetSignalCoordinate(signal)?.value < position : GetSignalCoordinate(signal)?.value > position;
         }
 
-        public List<TvpSection> GetOverlappingTvpSections(LinearElementWithLength edge, ApplicationDirection direction, Signal? start, Signal? end) {
-            var tvpSections = DataPrepEntities.ownsTrackAsset.OfType<TvpSection>()
-                .Select(x => (
-                    Section: x,
-                    Heads: DataPrepEntities.ownsTrackAsset.OfType<AxleCountingHead>().Where(head => head.limitsTdsSection.Any(limits => limits.@ref == x.id)))
-                ).Select(x => (x.Section, Heads: x.Heads.Select(head => (
-                    Head: head,
-                    VehiclePassageDetector: RsmEntities.ownsOnTrackSignallingDevice
-                        .OfType<VehiclePassageDetector>()
-                        .Single(x => x.id == head.refersToRsmVehiclePassageDetector.@ref))).ToList())
-                ).Select(x => (x.Section, Heads: x.Heads.Select(head => (
-                    head.Head,
-                    head.VehiclePassageDetector,
-                    Location: GetSpotLocation(head.VehiclePassageDetector.locations.Single().@ref))))
-                ).Where(x => x.Heads.Any(head => head.Location.associatedNetElements.Single().netElement?.@ref == edge.id)).ToList();
+        public List<TvpSection> GetOverlappingTvpSections(List<(string Edge, double Offset)> area) {
+            var offsetsByEdge =
+                from bounds in area
+                group bounds by bounds.Edge into b
+                select b;
 
-            if (start == null && end == null) {
-                return tvpSections.Select(x => x.Section).ToList();
-            }
-
-            return tvpSections.Where(x =>
-                // Case 1: If no start is provided: At least one head sits before the end signal
-                (start == null && x.Heads.Any(head => BeforeSignal(end, direction, head.Location))) ||
-                // Case 2: One head sits before the start signal, another head behind
-                (start != null && x.Heads.Any(head => BeforeSignal(start, direction, head.Location)) && x.Heads.Any(head => BehindSignal(start, direction, head.Location))) ||
-                // Case 3: If no end is provided: At least one head sits behind the start signal
-                (end == null && x.Heads.Any(head => BehindSignal(start, direction, head.Location))) ||
-                // Case 4: At least one head sits between start and end signal
-                (start != null && end != null && x.Heads.Any(head => BehindSignal(start, direction, head.Location) && BeforeSignal(end, direction, head.Location)))
-            ).Select(x => x.Section).ToList();
+            return (
+                from section in DataPrep.Get<TvpSection>()
+                let areaLocation = DataPrep.GetById<AreaLocation>(section.isLocatedAt!)
+                from edge in areaLocation.associatedNetElements.Select(x => (
+                    Bounds: x.bounds.Select(b => DataPrep.GetById<IntrinsicCoordinate>(b)).ToList(),
+                    Edge: x.netElement!.@ref
+                ))
+                join bounds in offsetsByEdge on edge.Edge equals bounds.Key
+                where edge.Bounds.Count == 2 && bounds.Count() == 2
+                let orderedBoundsTvp = edge.Bounds.OrderBy(x => x.value).ToList()
+                let orderedBoundsRoute = bounds.OrderBy(x => x.Offset).ToList()
+                let tStart = orderedBoundsTvp.First().value!.Value
+                let tEnd = orderedBoundsTvp.Last().value!.Value
+                let rStart = bounds.First().Offset
+                let rEnd = bounds.Last().Offset
+                where
+                    tStart <= rStart && rStart < tEnd ||
+                    tStart < rEnd && rEnd <= tEnd
+                select section
+            ).Distinct().ToList();
         }
+
+        // public List<TvpSection> GetOverlappingTvpSections(LinearElementWithLength edge, ApplicationDirection direction, Signal? start, Signal? end) {
+        //     var tvpSections = DataPrepEntities.ownsTrackAsset.OfType<TvpSection>()
+        //         .Select(x => (
+        //             Section: x,
+        //             Heads: DataPrepEntities.ownsTrackAsset.OfType<AxleCountingHead>().Where(head => head.limitsTdsSection.Any(limits => limits.@ref == x.id)))
+        //         ).Select(x => (x.Section, Heads: x.Heads.Select(head => (
+        //             Head: head,
+        //             VehiclePassageDetector: RsmEntities.ownsOnTrackSignallingDevice
+        //                 .OfType<VehiclePassageDetector>()
+        //                 .Single(x => x.id == head.refersToRsmVehiclePassageDetector.@ref))).ToList())
+        //         ).Select(x => (x.Section, Heads: x.Heads.Select(head => (
+        //             head.Head,
+        //             head.VehiclePassageDetector,
+        //             Location: GetSpotLocation(head.VehiclePassageDetector.locations.Single().@ref))))
+        //         ).Where(x => x.Heads.Any(head => head.Location.associatedNetElements.Single().netElement?.@ref == edge.id)).ToList();
+
+        //     if (start == null && end == null) {
+        //         return tvpSections.Select(x => x.Section).ToList();
+        //     }
+
+        //     return tvpSections.Where(x =>
+        //         // Case 1: If no start is provided: At least one head sits before the end signal
+        //         (start == null && x.Heads.Any(head => BeforeSignal(end, direction, head.Location))) ||
+        //         // Case 2: One head sits before the start signal, another head behind
+        //         (start != null && x.Heads.Any(head => BeforeSignal(start, direction, head.Location)) && x.Heads.Any(head => BehindSignal(start, direction, head.Location))) ||
+        //         // Case 3: If no end is provided: At least one head sits behind the start signal
+        //         (end == null && x.Heads.Any(head => BehindSignal(start, direction, head.Location))) ||
+        //         // Case 4: At least one head sits between start and end signal
+        //         (start != null && end != null && x.Heads.Any(head => BehindSignal(start, direction, head.Location) && BeforeSignal(end, direction, head.Location)))
+        //     ).Select(x => x.Section).ToList();
+        // }
 
         /// <summary>
         /// Returns the edge (LinearElementWithLength) that is associated with the given signal.
@@ -622,7 +636,7 @@ namespace PlanningToolkit
         /// <typeparam name="T"></typeparam>
         /// <returns>The point</returns>
         public T AddPoint<T>(
-            List<PositionedRelation> relations,
+            IEnumerable<PositionedRelation> relations,
             TurnoutOrientation orientation,
             string name
         ) where T : Turnout, new()
