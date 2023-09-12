@@ -555,38 +555,6 @@ namespace PlanningToolkit
             ).Distinct().ToList();
         }
 
-        // public List<TvpSection> GetOverlappingTvpSections(LinearElementWithLength edge, ApplicationDirection direction, Signal? start, Signal? end) {
-        //     var tvpSections = DataPrepEntities.ownsTrackAsset.OfType<TvpSection>()
-        //         .Select(x => (
-        //             Section: x,
-        //             Heads: DataPrepEntities.ownsTrackAsset.OfType<AxleCountingHead>().Where(head => head.limitsTdsSection.Any(limits => limits.@ref == x.id)))
-        //         ).Select(x => (x.Section, Heads: x.Heads.Select(head => (
-        //             Head: head,
-        //             VehiclePassageDetector: RsmEntities.ownsOnTrackSignallingDevice
-        //                 .OfType<VehiclePassageDetector>()
-        //                 .Single(x => x.id == head.refersToRsmVehiclePassageDetector.@ref))).ToList())
-        //         ).Select(x => (x.Section, Heads: x.Heads.Select(head => (
-        //             head.Head,
-        //             head.VehiclePassageDetector,
-        //             Location: GetSpotLocation(head.VehiclePassageDetector.locations.Single().@ref))))
-        //         ).Where(x => x.Heads.Any(head => head.Location.associatedNetElements.Single().netElement?.@ref == edge.id)).ToList();
-
-        //     if (start == null && end == null) {
-        //         return tvpSections.Select(x => x.Section).ToList();
-        //     }
-
-        //     return tvpSections.Where(x =>
-        //         // Case 1: If no start is provided: At least one head sits before the end signal
-        //         (start == null && x.Heads.Any(head => BeforeSignal(end, direction, head.Location))) ||
-        //         // Case 2: One head sits before the start signal, another head behind
-        //         (start != null && x.Heads.Any(head => BeforeSignal(start, direction, head.Location)) && x.Heads.Any(head => BehindSignal(start, direction, head.Location))) ||
-        //         // Case 3: If no end is provided: At least one head sits behind the start signal
-        //         (end == null && x.Heads.Any(head => BehindSignal(start, direction, head.Location))) ||
-        //         // Case 4: At least one head sits between start and end signal
-        //         (start != null && end != null && x.Heads.Any(head => BehindSignal(start, direction, head.Location) && BeforeSignal(end, direction, head.Location)))
-        //     ).Select(x => x.Section).ToList();
-        // }
-
         /// <summary>
         /// Returns the edge (LinearElementWithLength) that is associated with the given signal.
         /// </summary>
@@ -792,9 +760,11 @@ namespace PlanningToolkit
             );
 
             // routeBody, routeEntry & routeExit
-            var routeBody = new RouteBody();
-            routeBody.id = IdManager.computeUuid5<RouteBody>(rsmRouteBody.id!);
-            routeBody.refersToRsmRouteBody = new tElementWithIDref(rsmRouteBody.id!);
+            var routeBody = new RouteBody
+            {
+                id = IdManager.computeUuid5<RouteBody>(rsmRouteBody.id!),
+                refersToRsmRouteBody = new tElementWithIDref(rsmRouteBody.id!)
+            };
 
             var routeEntry = AddRouteEntry(entrySignal);
             routeEntry.id = IdManager.computeUuid5<RouteEntry>($"{name}.{GetTrackAsset(entrySignal.@ref)?.id}");
