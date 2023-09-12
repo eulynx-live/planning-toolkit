@@ -104,14 +104,6 @@ namespace PlanningToolkit.Builder
             return this;
         }
 
-        // private List<string> GetConnectedEdgeIds(string edgeId) {
-        //     var positionedRelationsA = _builder.DataPrep.Get<PositionedRelation>().Where(x => x.elementA?.@ref == edgeId);
-        //     var positionedRelationsB = _builder.DataPrep.Get<PositionedRelation>().Where(x => x.elementB?.@ref == edgeId);
-
-        //     return positionedRelationsA.Select(x => x.elementB!.@ref)
-        //         .Concat(positionedRelationsB.Select(x => x.elementA!.@ref)).ToList();
-        // }
-
         private void ComputeAreaLocation() {
             var boundsOnEdges = _bounds.Select(x => (Edge: x.NetElement.netElement!.@ref, x.Offset));
             var edges = boundsOnEdges.Select(x => x.Edge).Distinct();
@@ -180,28 +172,6 @@ namespace PlanningToolkit.Builder
 
                 throw new Exception("Bounds of axle counting section are not fully defined.");
             }
-
-            // {
-            //     // The area location must be completely restricted
-            //     var edges = _areaLocation.associatedNetElements.GroupBy(x => x.netElement!.@ref).First().ToList();
-            //     var bounds = edges.SelectMany(x =>
-            //         x.bounds.Select(b => _extraCoordinates.SingleOrDefault(c => c.id == b.@ref) ?? _builder.DataPrep.GetById<IntrinsicCoordinate>(b))).ToList();
-
-            //     // Case 1: There are two bounds and a single edge
-            //     if (edges.Count == 1) {
-            //         if (bounds.Count != 2) {
-            //             throw new Exception("Validation failed: not enough bounds provided");
-            //         }
-            //     }
-            //     // Case 2: More than one edge
-            //     else
-            //     {
-            //         // There must be an edge that is connected to exactly one other edge from the set
-            //         var interestingEdge = edges.Where(x => GetConnectedEdgeIds(x.netElement!.@ref).Count(x => edges.Any(e => e.netElement!.@ref == x)) == 1).FirstOrDefault() ?? throw new Exception("TDS section is circular");
-            //         var connectedEdges = GetConnectedEdgeIds(interestingEdge.netElement!.@ref);
-
-            //     }
-            // }
         }
 
         public T Build() {
