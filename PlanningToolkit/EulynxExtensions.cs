@@ -217,7 +217,9 @@ namespace PlanningToolkit
 
         public static List<TvpSection> IsLocatedInTvpSections(this EulynxDataPrepInterface dp, LinearElementWithLength edge, double offset)
         {
-            return dp.hasDataContainer.Single().ownsDataPrepEntities!.ownsTrackAsset.OfType<TvpSection>().Where(section => IsInAreaLocation(dp, edge, offset, dp.GetById<AreaLocation>(section.isLocatedAt!)!)).ToList();
+            return dp.Get<TvpSection>()
+                .Where(section => IsInAreaLocation(dp, edge, offset, dp.GetById<AreaLocation>(section.isLocatedAt!)!))
+                .ToList();
         }
     }
 }
