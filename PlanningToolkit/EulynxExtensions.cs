@@ -59,6 +59,10 @@ namespace PlanningToolkit
             {
                 return rsm.ownsSignal.OfType<T>();
             }
+            else if (IsSubclassOf<Turnout, T>())
+            {
+                return rsm.ownsPoint.OfType<T>();
+            }
 
             throw new NotImplementedException();
         }
