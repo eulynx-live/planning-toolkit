@@ -47,19 +47,19 @@ namespace PlanningToolkit
             DataPrep.hasDataContainer.Add(container);
         }
 
-        private PositionedRelation? GetPositionedRelation(String relationId) =>
+        private PositionedRelation? GetPositionedRelation(string relationId) =>
             RsmEntities.usesTrackTopology?.usesPositionedRelation.Where(x => x.id == relationId).Single();
-        public TrackAsset? GetTrackAsset(String assetId) =>
+        public TrackAsset? GetTrackAsset(string assetId) =>
             DataPrepEntities.ownsTrackAsset?.Where(x => x.id == assetId).Single();
-        public LinearElementWithLength? GetLinearElementWithLength(String elementId) =>
+        public LinearElementWithLength? GetLinearElementWithLength(string elementId) =>
             RsmEntities.usesTrackTopology?.usesNetElement.OfType<LinearElementWithLength>().Where(l => l.id == elementId).Single();
-        private IntrinsicCoordinate? GetCoordinates(String boundsId) =>
+        private IntrinsicCoordinate? GetCoordinates(string boundsId) =>
             RsmEntities.usesTopography?.usesIntrinsicCoordinate.Where(x => x.id == boundsId).Single();
-        private SpotLocation GetSpotLocation(String location) =>
+        private SpotLocation GetSpotLocation(string location) =>
             RsmEntities.usesLocation.OfType<SpotLocation>().Where(l => l.id == location).Single();
-        private LinearLocation? GetLinearLocation(String location) =>
+        private LinearLocation? GetLinearLocation(string location) =>
             RsmEntities.usesLocation.Where(l => l.id == location).Single() as LinearLocation;
-        public RsmSignal? GetRsmSignal(String signalId) =>
+        public RsmSignal? GetRsmSignal(string signalId) =>
             RsmEntities.ownsSignal.Where(s => s.id == signalId).Single();
         public void AddTrackAsset(TrackAsset asset) =>
             DataPrepEntities.ownsTrackAsset?.Add(asset);
@@ -388,18 +388,22 @@ namespace PlanningToolkit
             SignalType signalType = AddSignalType(signalTypeType);
             SignalFunction signalFunction = AddSignalFunction(signalFunctionType);
 
-            var position = new IntrinsicCoordinate();
-            position.value = offset;
+            var position = new IntrinsicCoordinate
+            {
+                value = offset
+            };
             position.id = IdManager.computeUuid5<IntrinsicCoordinate>($"{position.value.ToString()}.{name}");
             AddCoordinates(position);
 
             var location = AddSpotLocation(side, applicationDirection, position, edge);
             var rsmSignal = AddRsmSignal(name, new List<tElementWithIDref> { new tElementWithIDref(location.id!) });
 
-            var signal = new T();
-            signal.hasProperty = new List<SignalProperty> { signalFunction, signalType };
-            signal.id = IdManager.computeUuid5<Signal>(rsmSignal.id!);
-            signal.refersToRsmSignal = new tElementWithIDref(rsmSignal.id!);
+            var signal = new T
+            {
+                hasProperty = new List<SignalProperty> { signalFunction, signalType },
+                id = IdManager.computeUuid5<Signal>(rsmSignal.id!),
+                refersToRsmSignal = new tElementWithIDref(rsmSignal.id!)
+            };
             AddTrackAsset(signal);
 
             return signal;
@@ -446,13 +450,13 @@ namespace PlanningToolkit
         /// <returns></returns>
         public IntrinsicCoordinate GetSignalCoordinate(Signal signal) {
             if (signal.refersToRsmSignal == null)
-                throw new ArgumentException();
+                throw new ArgumentException(nameof(signal.refersToRsmSignal));
 
-            var rsmSignal = DataPrep.GetById<RsmSignal>(signal.refersToRsmSignal) ?? throw new ArgumentException();
+            var rsmSignal = DataPrep.GetById<RsmSignal>(signal.refersToRsmSignal) ?? throw new ArgumentException(nameof(signal.refersToRsmSignal));
 
-            var spotLocation = DataPrep.GetById<SpotLocation>(rsmSignal.locations.Single()) ?? throw new ArgumentException();
+            var spotLocation = DataPrep.GetById<SpotLocation>(rsmSignal.locations.Single()) ?? throw new ArgumentException(nameof(signal.refersToRsmSignal));
 
-            return GetCoordinates(spotLocation.associatedNetElements.Single().bounds.Single().@ref) ?? throw new ArgumentException();
+            return GetCoordinates(spotLocation.associatedNetElements.Single().bounds.Single().@ref) ?? throw new ArgumentException(nameof(signal.refersToRsmSignal));
         }
 
         // GetCoordinates(
@@ -477,55 +481,6 @@ namespace PlanningToolkit
         /// <returns></returns>
         public bool IsMainSignal(Signal signal) =>
             signal.hasProperty.OfType<SignalType>().Any(p => p.isOfSignalTypeType == SignalTypeTypes.main);
-
-        IEnumerable<TvpSection>? GetTvpSectionsForEdgeWithPosition(LinearElementWithLength edge, Func<double?, Boolean> comparePosition, ApplicationDirection? direction)
-        {
-            Func<VehiclePassageDetector, double?> GetLocationValue = (VehiclePassageDetector vpd) => GetCoordinates(
-                    GetSpotLocation(vpd.locations.Single().@ref ?? "")?.associatedNetElements.Single().bounds.Single().@ref ?? ""
-                )?.value;
-            var vehiclePassageDetectors = GetVehiclePassageDetectorsOnEdge(edge);
-            var vehiclePassageDetectorsWithPosition = vehiclePassageDetectors?
-                .Where(h => comparePosition(GetLocationValue(h)));
-            var sortedVehiclePassageDetectorsWithPosition = (direction == ApplicationDirection.normal)
-                ? vehiclePassageDetectorsWithPosition?.OrderBy(v => GetLocationValue(v))
-                : vehiclePassageDetectorsWithPosition?.OrderByDescending(v =>GetLocationValue(v)
-            );
-            var axleCountingHeads = vehiclePassageDetectorsWithPosition?
-                .Select(v => GetAxleCountingHeadForVehiclePassageDetector(v))
-                .OfType<AxleCountingHead>();
-            var orderedSections = axleCountingHeads?.SelectMany(a => a.limitsTdsSection);
-            return (direction == ApplicationDirection.normal) ?
-                orderedSections?.Select(l => GetTrackAsset(l.@ref)).OfType<TvpSection>().Distinct() :
-                orderedSections?.Reverse().Select(l => GetTrackAsset(l.@ref)).OfType<TvpSection>().Distinct();
-        }
-
-        /// <summary>
-        /// </summary>
-        /// <param name="signal"></param>
-        /// <param name="direction"></param>
-        /// <returns></returns>
-        bool BeforeSignal(Signal signal, ApplicationDirection direction, SpotLocation l)
-        {
-            var location = l.associatedNetElements.Single().bounds.Single().@ref;
-            var position = GetCoordinates(location)?.value;
-
-            return (direction == ApplicationDirection.normal) ?
-                GetSignalCoordinate(signal)?.value > position : GetSignalCoordinate(signal)?.value < position;
-        }
-
-        /// <summary>
-        /// Returns whether the given position is positioned after the signal's position on an edge.
-        /// </summary>
-        /// <param name="signal"></param>
-        /// <param name="direction"></param>
-        /// <returns></returns>
-        bool BehindSignal(Signal signal, ApplicationDirection direction, SpotLocation l)
-        {
-            var location = l.associatedNetElements.Single().bounds.Single().@ref;
-            var position = GetCoordinates(location)?.value;
-            return (direction == ApplicationDirection.normal) ?
-                GetSignalCoordinate(signal)?.value < position : GetSignalCoordinate(signal)?.value > position;
-        }
 
         public List<TvpSection> GetOverlappingTvpSections(List<(string Edge, double Offset)> area) {
             var offsetsByEdge =
@@ -583,14 +538,16 @@ namespace PlanningToolkit
         public PositionedRelation ConnectEndToStart(LinearElementWithLength edge1, LinearElementWithLength edge2, LeftRight leftRight,
             Navigability? navigability = null, Usage? positionOnA = null, Usage? positionOnB = null)
         {
-            var relation = new PositionedRelation($"{edge1.id}.{edge2.id}");
-            relation.id = $"{edge1.id}.{edge2.id}";
-            relation.elementA = new tElementWithIDref(edge1.id ?? "");
-            relation.elementB = new tElementWithIDref(edge2.id ?? "");
-            relation.leadsTowards = leftRight;
-            relation.navigability = navigability ?? Navigability.Both;
-            relation.positionOnA = positionOnA ?? Usage.end;
-            relation.positionOnB = positionOnB ?? Usage.start;
+            var relation = new PositionedRelation()
+            {
+                id = $"{edge1.id}.{edge2.id}",
+                elementA = new tElementWithIDref(edge1.id ?? ""),
+                elementB = new tElementWithIDref(edge2.id ?? ""),
+                leadsTowards = leftRight,
+                navigability = navigability ?? Navigability.Both,
+                positionOnA = positionOnA ?? Usage.end,
+                positionOnB = positionOnB ?? Usage.start
+            };
             AddPositionedRelation(relation);
             return relation;
         }
@@ -665,7 +622,7 @@ namespace PlanningToolkit
         private RsmRouteBody AddRsmRouteBody(string name, List<tElementWithIDref> locations)
         {
             var rsmRouteBody = new RsmRouteBody();
-            var id = String.Join("", locations.Select(l => l.@ref));
+            var id = string.Join("", locations.Select(l => l.@ref));
             rsmRouteBody.id = IdManager.computeUuid5<RsmRouteBody>(id);
             rsmRouteBody.locations = locations;
             rsmRouteBody.name = name;
@@ -682,9 +639,11 @@ namespace PlanningToolkit
         /// <returns></returns>
         private RouteEntry AddRouteEntry(tElementWithIDref entrySignal)
         {
-            var routeEntry = new RouteEntry();
-            routeEntry.id = IdManager.computeUuid5<RouteEntry>($"{entrySignal}");
-            routeEntry.isAssociatedWithSignal = entrySignal;
+            var routeEntry = new RouteEntry
+            {
+                id = IdManager.computeUuid5<RouteEntry>($"{entrySignal}"),
+                isAssociatedWithSignal = entrySignal
+            };
             return routeEntry;
         }
 
@@ -695,9 +654,11 @@ namespace PlanningToolkit
         /// <returns></returns>
         private RouteExit AddRouteExit(tElementWithIDref exitSignal)
         {
-            var routeExit = new RouteExit();
-            routeExit.id = IdManager.computeUuid5<RouteEntry>($"{exitSignal}");
-            routeExit.isAssociatedWithSignal = exitSignal;
+            var routeExit = new RouteExit
+            {
+                id = IdManager.computeUuid5<RouteEntry>($"{exitSignal}"),
+                isAssociatedWithSignal = exitSignal
+            };
             return routeExit;
         }
 
@@ -709,9 +670,11 @@ namespace PlanningToolkit
         /// <returns></returns>
         public SectionList AddSectionList(RouteBody routeBody, List<tElementWithIDref> listOfSections)
         {
-            var sectionList = new SectionList();
-            sectionList.appliesToRouteBody = new tElementWithIDref(routeBody.id ?? "");
-            sectionList.hasSection = listOfSections;
+            var sectionList = new SectionList
+            {
+                appliesToRouteBody = new tElementWithIDref(routeBody.id ?? ""),
+                hasSection = listOfSections
+            };
 
             AddSectionList(sectionList);
             return sectionList;
@@ -721,13 +684,15 @@ namespace PlanningToolkit
         /// Adds ConflictingRoutes to a route.
         /// </summary>
         /// <param name="route"></param>
-        /// <param name="conflictedRoutes"></param>
+        /// <param name="conflictingRoutes"></param>
         /// <returns></returns>
-        public ConflictingRoute AddConflictingRoute(tElementWithIDref route, List<tElementWithIDref> conflictedRoutes)
+        public ConflictingRoute AddConflictingRoutes(Models.TopoModels.EULYNX.db.MainRoute route, IEnumerable<Models.TopoModels.EULYNX.db.MainRoute> conflictingRoutes)
         {
-            var conflictingRoute = new ConflictingRoute();
-            conflictingRoute.hasConflictsWithRoute = conflictedRoutes;
-            conflictingRoute.requestedRoute = route;
+            var conflictingRoute = new ConflictingRoute
+            {
+                hasConflictsWithRoute = conflictingRoutes.Select(x => new tElementWithIDref(x.id!)).ToList(),
+                requestedRoute = new tElementWithIDref(route.id!)
+            };
 
             AddConflictingRoute(conflictingRoute);
             return conflictingRoute;
@@ -780,14 +745,14 @@ namespace PlanningToolkit
 
         public PointElementAndPosition AddPointElementAndPosition(RouteBody routeBody, Turnout point, LeftRight position)
         {
-            var peap = new PointElementAndPosition()
+            var peap = new PointElementAndPosition
             {
                 refersToMovableElement = new tElementWithIDref(point.id ?? ""),
                 inPosition = position == LeftRight.left ?
                     Models.TopoModels.EULYNX.generic.LeftRight.left :
-                    Models.TopoModels.EULYNX.generic.LeftRight.right
+                    Models.TopoModels.EULYNX.generic.LeftRight.right,
+                id = IdManager.computeUuid5<PointElementAndPosition>($"{point.name}.{position}")
             };
-            peap.id = IdManager.computeUuid5<PointElementAndPosition>($"{point.name}.{position.ToString()}");
             var peapReference = new tElementWithIDref(peap.id ?? "");
             if (!pointElementsAndPositions.Contains(peap.id ?? ""))
             {

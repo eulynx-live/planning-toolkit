@@ -188,8 +188,6 @@ public class RouteBuilder
         };
         _builder.DataPrep.hasDataContainer[0].ownsDataPrepEntities?.ownsConditionSectionsClear.Add(csc);
 
-        var conflictingRoute = _builder.AddConflictingRoute(csc.affectsRoute, csc.provesSection);
-
         var listOfSections = routeData.TvpSections.Select(s => new tElementWithIDref(s.id ?? "")).ToList();
         var sectionList = _builder.AddSectionList(routeBody, listOfSections);
 
@@ -203,25 +201,36 @@ public class RouteBuilder
     /// </summary>
     /// <param name="routes"></param>
     /// <returns></returns>
-    public Dictionary<string, List<RouteData>> AddConflictingRoutes(List<RouteData> routes)
+    public void AddConflictingRoutes()
     {
-        var conflictingRoutesMap = new Dictionary<string, List<RouteData>>();
-        for (int i = 0; i < routes.Count(); i++)
+        var routes = _builder.DataPrep.Get<MainRoute>().ToList();
+
+        foreach (var route in routes)
         {
-            // WARNING: We assume that there is only ever one route from entrySignal to exitSignal!
-            var routeId = $"{routes[i].EntrySignal.id}.{routes[i].ExitSignal?.id}";
-            var conflictingRoutes = new List<RouteData>();
-            for (int j = 0; j < routes.Count(); j++)
+            var sections = _builder.DataPrep.Get<ConditionSectionsClear>()
+                .Where(x => x.affectsRoute?.@ref == route.id)
+                .SelectMany(x => x.provesSection)
+                .Select(x => x.@ref)
+                .ToList();
+
+            var conflictingRoutes = new List<MainRoute>();
+
+            foreach (var otherRoute in routes.Where(x => x != route))
             {
-                // Check if two routes share any tvpSection and add conflict if true
-                if (i != j && routes[i].TvpSections.Intersect(routes[j].TvpSections).Count() > 0)
+                // Check if the two routes share any tvpSection and add a conflict if true
+
+                var otherSections = _builder.DataPrep.Get<ConditionSectionsClear>()
+                    .Where(x => x.affectsRoute?.@ref == otherRoute.id)
+                    .SelectMany(x => x.provesSection)
+                    .Select(x => x.@ref);
+
+                if (sections.Intersect(otherSections).Any())
                 {
-                    conflictingRoutes.Add(routes[j]);
+                    conflictingRoutes.Add(otherRoute);
                 }
             }
-            conflictingRoutesMap.Add(routeId, conflictingRoutes);
-        }
-        return conflictingRoutesMap;
-    }
 
+            _builder.AddConflictingRoutes(route, conflictingRoutes);
+        }
+    }
 }

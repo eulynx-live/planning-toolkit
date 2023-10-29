@@ -122,8 +122,8 @@ var sDTES = builder.AddSignal<RastaSignal>("DTES", edge1, 0, Side.left, Applicat
 var sDDRE = builder.AddSignal<RastaSignal>("DDRE", edge4, 1, Side.right, ApplicationDirection.normal, SignalTypeTypes.main, SignalFunctionTypes.trainDestinationOnlySignal);
 
 var routeBuilder = new RouteBuilder(builder);
-var routes = routeBuilder.AddRoutes();
-var conflictingRoutes = routeBuilder.AddConflictingRoutes(routes);
+var _ = routeBuilder.AddRoutes();
+routeBuilder.AddConflictingRoutes();
 
 // Serialize to file
 new EulynxExport(builder.DataPrep).SerializeToFile("Poersten.exml");

@@ -66,7 +66,7 @@ var sectionA = builder.AddAxleCountingSection<RastaAxleCountingSection>("A")
     .WithAssociatedHead(head_A__103)
     .LimitedByUnconnectedEndOfEdge(edge1)
     .Build();
-var section103 = builder.AddAxleCountingSection<RastaAxleCountingSection>("103")
+var section103 = builder.AddAxleCountingSection<RastaAxleCountingSection>("99B103")
     .WithAssociatedHead(head_A__103)
     .WithAssociatedHead(head_103__203)
     .Build();
@@ -122,11 +122,11 @@ var section703 = builder.AddAxleCountingSection<RastaAxleCountingSection>("703")
     .WithAssociatedHead(head_703__101)
     .WithAssociatedHead(head_603__703)
     .Build();
-var section101 = builder.AddAxleCountingSection<RastaAxleCountingSection>("101")
+var section101 = builder.AddAxleCountingSection<RastaAxleCountingSection>("99B101")
     .WithAssociatedHead(head_101__W4)
     .WithAssociatedHead(head_703__101)
     .Build();
-var section102 = builder.AddAxleCountingSection<RastaAxleCountingSection>("102")
+var section102 = builder.AddAxleCountingSection<RastaAxleCountingSection>("99B102")
     .WithAssociatedHead(head_102__W4)
     .WithAssociatedHead(head_103__203)
     .WithAssociatedHead(head_704__102)
@@ -163,8 +163,8 @@ var sDMAR = builder.AddSignal<Signal>("DMAR", edge8, 1, Side.right, ApplicationD
 
 // Generate possible routes
 var routeBuilder = new RouteBuilder(builder);
-var routes = routeBuilder.AddRoutes();
-var conflictingRoutes = routeBuilder.AddConflictingRoutes(routes);
+var _ = routeBuilder.AddRoutes();
+routeBuilder.AddConflictingRoutes();
 
 // Rasta Configuration
 
@@ -174,7 +174,7 @@ w3.RastaId = 2345680;
 w4.RastaId = 2345681;
 
 sectionA.RastaId = 0;
-section103.RastaId = 0;
+section103.RastaId = 256;
 section203.RastaId = 0;
 sectionW1.RastaId = 0;
 section403.RastaId = 0;
@@ -187,8 +187,8 @@ section502.RastaId = 0;
 section603.RastaId = 0;
 section704.RastaId = 0;
 section703.RastaId = 0;
-section101.RastaId = 0;
-section102.RastaId = 0;
+section101.RastaId = 256;
+section102.RastaId = 256;
 sectionW4.RastaId = 0;
 section201.RastaId = 0;
 

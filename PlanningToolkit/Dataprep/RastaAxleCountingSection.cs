@@ -7,5 +7,5 @@ using Models.TopoModels.EULYNX.sig;
 public partial class RastaAxleCountingSection : AxleCountingSection
 {
     [XmlElement("rastaId", Order = 3)]
-    public UInt32? RastaId { get; set; }
+    public uint? RastaId { get; set; }
 }

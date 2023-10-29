@@ -7,5 +7,5 @@ using Models.TopoModels.EULYNX.sig;
 public partial class RastaSignal: Signal
 {
     [XmlElement("rastaId", Order = 8)]
-    public UInt32? RastaId { get; set; }
+    public uint? RastaId { get; set; }
 }

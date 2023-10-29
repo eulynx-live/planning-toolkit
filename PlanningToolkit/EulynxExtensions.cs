@@ -63,8 +63,16 @@ namespace PlanningToolkit
             {
                 return rsm.ownsPoint.OfType<T>();
             }
+            else if (IsSubclassOf<Route, T>())
+            {
+                return dataPrep.ownsRoute.OfType<T>();
+            }
+            else if (IsSubclassOf<ConditionSectionsClear, T>())
+            {
+                return dataPrep.ownsConditionSectionsClear.OfType<T>();
+            }
 
-            throw new NotImplementedException();
+            throw new NotImplementedException(typeof(T).Name);
         }
 
         public static T? ResolveByIdRef<T>(this IEnumerable<T> collection, tElementWithIDref idRef) where T : Models.TopoModels.EULYNX.rsmCommon.BaseObject
@@ -138,15 +146,6 @@ namespace PlanningToolkit
             ).Single();
         }
 
-        public static string[] GetAxleCountingHeads(this IEnumerable<TrackAsset> This, AxleCountingSection axleCountingSection)
-        {
-            return (
-                from axleCountingHead in This.OfType<EulynxAxleCountingHead>()
-                where axleCountingHead.limitsTdsSection.Any(tdsSection => tdsSection.@ref == axleCountingSection.appliesToTvpSection.@ref)
-                select axleCountingHead.id
-            ).ToArray();
-        }
-
         public static IEnumerable<Signal> GetSignals(this IEnumerable<TrackAsset> This) => This.OfType<Signal>();
 
         public static Turnout GetPointFromRelations(this RsmEntities rsmEntities, IEnumerable<PositionedRelation> relations)
@@ -168,7 +167,7 @@ namespace PlanningToolkit
             return element.elementLength?.quantity.OfType<Length>().Single().value;
         }
 
-        public static String? GetName(this TdsSection tdsSection)
+        public static string? GetName(this TdsSection tdsSection)
         {
             return tdsSection.hasConfiguration?.hasConfigurationProperty.OfType<TdsDesignation>().Single().localName;
         }

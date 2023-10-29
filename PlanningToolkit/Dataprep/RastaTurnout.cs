@@ -8,6 +8,6 @@ public partial class RastaTurnout: Turnout
 {
 
     [XmlElement("rastaId", Order = 4)]
-    public UInt32? RastaId { get; set; }
+    public uint? RastaId { get; set; }
 
 }

@@ -73,8 +73,8 @@ var sDMAR = builder.AddSignal<RastaSignal>("DMAR", edge7, 1, Side.right, Applica
 
 // Generate possible routes
 var routeBuilder = new RouteBuilder(builder);
-var routes = routeBuilder.AddRoutes();
-var conflictingRoutes = routeBuilder.AddConflictingRoutes(routes);
+var _ = routeBuilder.AddRoutes();
+routeBuilder.AddConflictingRoutes();
 
 // RaSTA Configuration
 
