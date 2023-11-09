@@ -15,13 +15,18 @@ public class RouteBuilder
         _builder = builder;
     }
 
-    public record RouteData(Signal entrySignal)
+    public class RouteData
     {
-        public Signal EntrySignal { get; } = entrySignal;
+        public Signal EntrySignal { get; }
         public Signal? ExitSignal { get; set; }
         public List<(Turnout, Models.TopoModels.EULYNX.rsmCommon.LeftRight)> Points { get; init; } = new();
         public List<TvpSection> TvpSections { get; init; } = new List<TvpSection>();
         public List<(string Edge, double Offset)> Area { get; set; } = new();
+
+        public RouteData(Signal entrySignal)
+        {
+            EntrySignal = entrySignal;
+        }
     }
 
     /// <summary>
@@ -177,6 +182,15 @@ public class RouteBuilder
         foreach (var point in routeData.Points)
         {
             var peap = _builder.AddPointElementAndPosition(routeBody, point.Item1, point.Item2);
+        }
+
+
+        // Remove any section that overlaps with the start signal
+        // (and would thus prevent the route from being set)
+        var (EdgeId, Offset) = _builder.GetSignalPosition(routeData.EntrySignal);
+        var overlappingSections = _builder.GetOverlappingTvpSectionWithPosition(EdgeId, Offset);
+        foreach (var overlappingSection in overlappingSections) {
+            routeData.TvpSections.Remove(overlappingSection);
         }
 
         // Connect route with sections that need to be clear for this route to be set

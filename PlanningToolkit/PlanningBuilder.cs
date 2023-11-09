@@ -459,11 +459,26 @@ namespace PlanningToolkit
             return GetCoordinates(spotLocation.associatedNetElements.Single().bounds.Single().@ref) ?? throw new ArgumentException(nameof(signal.refersToRsmSignal));
         }
 
-        // GetCoordinates(
-        //     GetSpotLocation(
-        //         GetRsmSignal(signal.refersToRsmSignal?.@ref)?.locations.Single().@ref
-        //     )?
-        // .associatedNetElements.Single().bounds.Single().@ref);
+        /// <summary>
+        /// Returns the coordinates for a given signal on its edge.
+        /// </summary>
+        /// <param name="signal"></param>
+        /// <returns></returns>
+        public (string EdgeId, double Offset) GetSignalPosition(Signal signal) {
+            if (signal.refersToRsmSignal == null)
+                throw new ArgumentException(nameof(signal.refersToRsmSignal));
+
+            var rsmSignal = DataPrep.GetById<RsmSignal>(signal.refersToRsmSignal) ?? throw new ArgumentException(nameof(signal.refersToRsmSignal));
+
+            var spotLocation = DataPrep.GetById<SpotLocation>(rsmSignal.locations.Single()) ?? throw new ArgumentException(nameof(signal.refersToRsmSignal));
+
+            var bounds = spotLocation.associatedNetElements.Single();
+
+            return (
+                bounds.netElement?.@ref ?? throw new ArgumentException(nameof(signal.refersToRsmSignal)),
+                GetCoordinates(bounds.bounds.Single().@ref)?.value ?? throw new ArgumentException(nameof(signal.refersToRsmSignal))
+            );
+        }
 
         /// <summary>
         /// Returns all main signals with a direction on a given edge.
@@ -506,6 +521,25 @@ namespace PlanningToolkit
                 where
                     tStart <= rStart && rStart < tEnd ||
                     tStart < rEnd && rEnd <= tEnd
+                select section
+            ).Distinct().ToList();
+        }
+
+        internal List<TvpSection> GetOverlappingTvpSectionWithPosition(string edgeId, double offset)
+        {
+            return (
+                from section in DataPrep.Get<TvpSection>()
+                let areaLocation = DataPrep.GetById<AreaLocation>(section.isLocatedAt!)
+                from edge in areaLocation.associatedNetElements.Select(x => (
+                    Bounds: x.bounds.Select(b => DataPrep.GetById<IntrinsicCoordinate>(b)).ToList(),
+                    Edge: x.netElement!.@ref
+                ))
+                where edge.Edge == edgeId
+                where edge.Bounds.Count == 2
+                let orderedBoundsTvp = edge.Bounds.OrderBy(x => x.value).ToList()
+                let tStart = orderedBoundsTvp.First().value!.Value
+                let tEnd = orderedBoundsTvp.Last().value!.Value
+                where tStart <= offset && offset < tEnd
                 select section
             ).Distinct().ToList();
         }
