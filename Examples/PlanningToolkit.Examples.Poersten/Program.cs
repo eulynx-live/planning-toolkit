@@ -1,4 +1,4 @@
-﻿using Models.TopoModels.EULYNX.db;
+using Models.TopoModels.EULYNX.db;
 using Models.TopoModels.EULYNX.rsmCommon;
 using Models.TopoModels.EULYNX.rsmTrack;
 using PlanningToolkit;
@@ -14,15 +14,15 @@ var edge4 = builder.AddEdge(103.0, "edge4");
 
 // Points
 
-// W1
+// DW3
 var r1 = builder.ConnectEndToStart(edge1, edge3, LeftRight.right);
 var r2 = builder.ConnectEndToStart(edge1, edge2, LeftRight.left);
-var w1 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r1, r2 }, TurnoutOrientation.Right, "DW3");
+var dw3 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r1, r2 }, TurnoutOrientation.Right, "DW3");
 
-// W2
+// DW15
 var r3 = builder.ConnectEndToStart(edge2, edge4, LeftRight.right);
 var r4 = builder.ConnectEndToStart(edge3, edge4, LeftRight.left);
-var w2 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r3, r4 }, TurnoutOrientation.Left, "DW15");
+var dw15 = builder.AddPoint<RastaTurnout>(new List<PositionedRelation> { r3, r4 }, TurnoutOrientation.Left, "DW15");
 
 // Axle Counting Heads
 var head__100 = builder.AddAxleCountingHead("- / 100", edge1, 0.1);
@@ -101,8 +101,8 @@ var sD = builder.AddSignal<RastaSignal>("D", edge4, 0.1, Side.left, ApplicationD
 var sDTES = builder.AddSignal<RastaSignal>("DTES", edge1, 0, Side.left, ApplicationDirection.reverse, SignalTypeTypes.main, SignalFunctionTypes.trainDestinationOnlySignal);
 var sDDRE = builder.AddSignal<RastaSignal>("DDRE", edge4, 1, Side.right, ApplicationDirection.normal, SignalTypeTypes.main, SignalFunctionTypes.trainDestinationOnlySignal);
 
-w1.RastaId = 230;
-w2.RastaId = 231;
+dw3.RastaId = 230;
+dw15.RastaId = 231;
 section100.RastaId = 190;
 section100A.RastaId = 190;
 section101.RastaId = 190;
