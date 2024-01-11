@@ -216,7 +216,11 @@ namespace PlanningToolkit
             return RsmEntities.usesTrackTopology?.usesPositionedRelation
                 .Where(r =>
                 {
-                    return (direction == ApplicationDirection.normal) ? r.elementA?.@ref == edge.id : r.elementB?.@ref == edge.id;
+                    return (direction == ApplicationDirection.normal) ?
+                        (r.elementA?.@ref == edge.id && r.positionOnA == Usage.end ||
+                         r.elementB?.@ref == edge.id && r.positionOnB == Usage.end) :
+                        (r.elementA?.@ref == edge.id && r.positionOnA == Usage.start ||
+                         r.elementB?.@ref == edge.id && r.positionOnB == Usage.start);
                 }) ?? Enumerable.Empty<PositionedRelation>();
         }
 
@@ -516,8 +520,8 @@ namespace PlanningToolkit
                 let orderedBoundsRoute = bounds.OrderBy(x => x.Offset).ToList()
                 let tStart = orderedBoundsTvp.First().value!.Value
                 let tEnd = orderedBoundsTvp.Last().value!.Value
-                let rStart = bounds.First().Offset
-                let rEnd = bounds.Last().Offset
+                let rStart = orderedBoundsRoute.First().Offset
+                let rEnd = orderedBoundsRoute.Last().Offset
                 where
                     tStart <= rStart && rStart < tEnd ||
                     tStart < rEnd && rEnd <= tEnd
