@@ -65,7 +65,6 @@ public class RouteBuilder
             }
             else
             {
-                routeData.Area.Add((edge.id!, startSignalOffset));
                 return AddRouteForNextEdges<T>(edge, applicationDirection.Value, routeData);
             }
         }
@@ -91,7 +90,7 @@ public class RouteBuilder
         var routes = new List<RouteData>();
         foreach (var relation in nextPositionedRelations)
         {
-            var nextEdge = _builder.GetLinearElementWithLength(relation.elementA!.@ref) == edge ?
+            var nextEdge = relation.elementA!.@ref == edge.id ?
                 _builder.GetLinearElementWithLength(relation.elementB!.@ref) :
                 _builder.GetLinearElementWithLength(relation.elementA!.@ref);
             var nextPoint = _builder.GetNextPoint(edge, direction);
@@ -106,7 +105,9 @@ public class RouteBuilder
             }
             if (nextEdge != null)
             {
-                routes.AddRange(AddRouteForNextEdge<T>(nextEdge, direction, routeDataCopy));
+                var nextEdgePosition = relation.elementA!.@ref == edge.id ? relation.positionOnB : relation.positionOnA;
+                var nextEdgeDirection = nextEdgePosition == Usage.start ? ApplicationDirection.normal : ApplicationDirection.reverse;
+                routes.AddRange(AddRouteForNextEdge<T>(nextEdge, nextEdgeDirection, routeDataCopy));
             }
         }
         return routes;
@@ -124,7 +125,7 @@ public class RouteBuilder
     List<RouteData> AddRouteForNextEdge<T>(LinearElementWithLength edge, ApplicationDirection direction, RouteData routeData)
         where T : Route, new()
     {
-        routeData.Area.Add((edge.id!, 0));
+        routeData.Area.Add((edge.id!, direction == ApplicationDirection.normal ? 0 : 1));
         var mainSignals = _builder.GetMainSignalsWithDirection(edge, direction);
         if (mainSignals.Count > 0)
         {
